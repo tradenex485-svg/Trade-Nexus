@@ -51,7 +51,7 @@ export default function DashboardPage() {
   // Load exchanges
   const loadExchanges = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://trade-nexus-api.metabilityllc1.workers.dev'}/api/exchanges`);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8787'}/api/exchanges`);
       const data = await response.json();
       if (data.data) {
         setExchanges(data.data.filter((ex: Exchange) => ex.is_active));

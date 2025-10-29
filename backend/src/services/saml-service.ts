@@ -46,7 +46,7 @@ export class SAMLService {
   private initializeProviders() {
     // Service Provider (Trade Nexus)
     this.serviceProvider = saml.ServiceProvider({
-      entityID: `https://trade-nexus-api.metabilityllc1.workers.dev/saml/metadata/${this.config.companyId}`,
+      entityID: `${this.config.callbackUrl.split('/api')[0]}/saml/metadata/${this.config.companyId}`,
       authnRequestsSigned: false,
       wantAssertionsSigned: true,
       wantMessageSigned: true,
@@ -59,7 +59,7 @@ export class SAMLService {
       singleLogoutService: [
         {
           Binding: saml.Constants.namespace.binding.redirect,
-          Location: `https://trade-nexus-api.metabilityllc1.workers.dev/api/auth/saml/logout`,
+          Location: `${this.config.callbackUrl.split('/api')[0]}/api/auth/saml/logout`,
         },
       ],
     });

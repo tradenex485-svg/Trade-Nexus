@@ -17,8 +17,8 @@ info:
     - API keys: 1000 requests per minute
 
     ## Base URLs
-    - **Production**: https://trade-nexus-api.metabilityllc1.workers.dev
-    - **Development**: https://trade-nexus-api-dev.metabilityllc1.workers.dev
+    - **Production**: https://trade-nexus-api.workers.dev
+    - **Development**: https://trade-nexus-api-dev.workers.dev
 
   contact:
     name: Trade Nexus Support
@@ -27,9 +27,9 @@ info:
     name: Proprietary
 
 servers:
-  - url: https://trade-nexus-api-dev.metabilityllc1.workers.dev
+  - url: https://trade-nexus-api-dev.workers.dev
     description: Development server
-  - url: https://trade-nexus-api.metabilityllc1.workers.dev
+  - url: https://trade-nexus-api.workers.dev
     description: Production server
 
 tags:

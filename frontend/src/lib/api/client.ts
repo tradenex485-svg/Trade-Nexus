@@ -8,7 +8,7 @@ import { useAuthStore } from '@/store/auth-store';
 import { logger } from '@/lib/logger';
 
 export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || 'https://trade-nexus-api.metabilityllc1.workers.dev';
+  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8787';
 
 /**
  * Generic API fetch wrapper with automatic token injection

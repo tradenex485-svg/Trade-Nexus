@@ -36,7 +36,7 @@ export async function securityHeaders(c: Context, next: Next) {
     "style-src 'self' 'unsafe-inline'", // Allow inline styles for compatibility
     "img-src 'self' data: https:", // Allow images from same origin, data URIs, and HTTPS
     "font-src 'self' data:", // Allow fonts from same origin and data URIs
-    "connect-src 'self' https://trade-nexus-api-dev.metabilityllc1.workers.dev https://trade-nexus-api.metabilityllc1.workers.dev", // API endpoints
+    "connect-src 'self' https://*.workers.dev", // API endpoints
     "frame-ancestors 'none'", // Prevent embedding in frames (same as X-Frame-Options: DENY)
     "base-uri 'self'", // Restrict base tag to same origin
     "form-action 'self'", // Only allow form submissions to same origin
