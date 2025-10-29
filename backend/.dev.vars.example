@@ -1,0 +1,17 @@
+# Development Environment Variables
+# Copy this file to .dev.vars and fill in your values
+# .dev.vars is gitignored and will not be committed
+
+# Required: JWT Secret for token signing
+JWT_SECRET=your-development-jwt-secret-change-me
+
+# Optional: Twilio credentials for SMS (if implementing SMS)
+# TWILIO_ACCOUNT_SID=your_twilio_account_sid
+# TWILIO_AUTH_TOKEN=your_twilio_auth_token
+# TWILIO_PHONE_NUMBER=+1234567890
+
+# Optional: Sentry DSN for error tracking
+# SENTRY_DSN=https://your-sentry-dsn@sentry.io/project-id
+
+# Optional: Database encryption key (for sensitive data)
+# DATABASE_ENCRYPTION_KEY=your-encryption-key

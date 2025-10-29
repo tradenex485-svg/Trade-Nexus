@@ -1,0 +1,1082 @@
+openapi: 3.0.3
+info:
+  title: Trade Nexus API
+  version: 1.0.0
+  description: |
+    Comprehensive API for Trade Nexus - CFTC Position Limits Compliance Platform
+
+    ## Overview
+    Trade Nexus provides a complete suite of APIs for managing commodity trading position limits,
+    risk management, compliance reporting, and regulatory submissions to the CFTC.
+
+    ## Authentication
+    Most endpoints require JWT Bearer token authentication. Obtain a token via `/api/auth/login`.
+
+    ## Rate Limiting
+    - Standard users: 100 requests per minute
+    - API keys: 1000 requests per minute
+
+    ## Base URLs
+    - **Production**: https://trade-nexus-api.metabilityllc1.workers.dev
+    - **Development**: https://trade-nexus-api-dev.metabilityllc1.workers.dev
+
+  contact:
+    name: Trade Nexus Support
+    email: support@tradenexus.com
+  license:
+    name: Proprietary
+
+servers:
+  - url: https://trade-nexus-api-dev.metabilityllc1.workers.dev
+    description: Development server
+  - url: https://trade-nexus-api.metabilityllc1.workers.dev
+    description: Production server
+
+tags:
+  - name: Authentication
+    description: User authentication and authorization
+  - name: Users
+    description: User profile and settings management
+  - name: Dashboard
+    description: Dashboard data and analytics
+  - name: Position Limits
+    description: Position limits and transactions
+  - name: Market Limits
+    description: Market-wide position limits
+  - name: Risk Management
+    description: Risk thresholds, scenarios, and metrics
+  - name: Pre-Trade Validation
+    description: Pre-trade compliance validation
+  - name: Alerts
+    description: Alert notifications and management
+  - name: Compliance
+    description: Exemptions, filings, and data quality
+  - name: Reports
+    description: Report generation and subset reports
+  - name: Workflows
+    description: Approval workflows and trade approvals
+  - name: Admin
+    description: Administrative functions (exchanges, companies, traders)
+  - name: API Keys
+    description: API key management
+  - name: Documents
+    description: Document management and support
+  - name: Financial
+    description: Financial transactions and bank accounts
+  - name: Security
+    description: Security events, audit trail, and exceptions
+  - name: Data Import
+    description: Data import and aggregation
+  - name: CFTC
+    description: CFTC-specific features (monthly schedules, bid week)
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from /api/auth/login
+
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: API key for programmatic access
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error message
+        status:
+          type: integer
+          description: HTTP status code
+        details:
+          type: object
+          description: Additional error details
+      required:
+        - error
+
+    ApiResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: Whether the request was successful
+        data:
+          type: object
+          description: Response data
+        meta:
+          type: object
+          description: Metadata about the response
+        message:
+          type: string
+          description: Human-readable message
+
+    PaginationParams:
+      type: object
+      properties:
+        page:
+          type: integer
+          minimum: 1
+          default: 1
+          description: Page number
+        page_size:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+          description: Number of items per page
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 100
+          description: Maximum number of items to return
+        offset:
+          type: integer
+          minimum: 0
+          description: Number of items to skip
+
+    DateRangeParams:
+      type: object
+      properties:
+        start_date:
+          type: string
+          format: date
+          description: Start date (YYYY-MM-DD)
+        end_date:
+          type: string
+          format: date
+          description: End date (YYYY-MM-DD)
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: User ID
+        email:
+          type: string
+          format: email
+          description: User email address
+        name:
+          type: string
+          description: User full name
+        role:
+          type: string
+          enum: [admin, trader, compliance, viewer]
+          description: User role
+        company_id:
+          type: integer
+          description: Associated company ID
+        created_at:
+          type: string
+          format: date-time
+          description: Account creation timestamp
+      required:
+        - id
+        - email
+        - name
+        - role
+
+    PositionLimit:
+      type: object
+      properties:
+        id:
+          type: integer
+        contract_code:
+          type: string
+          description: Commodity contract code (e.g., CL, NG)
+        exchange:
+          type: string
+          description: Exchange name (e.g., NYMEX, CME)
+        spot_limit:
+          type: integer
+          description: Spot month position limit
+        single_month_limit:
+          type: integer
+          description: Single non-spot month limit
+        all_months_limit:
+          type: integer
+          description: All months combined limit
+        current_position:
+          type: integer
+          description: Current net position
+        utilization_percent:
+          type: number
+          format: float
+          description: Percentage of limit utilized
+        prioritization:
+          type: string
+          enum: [high, medium, low]
+          description: Priority level
+        status:
+          type: string
+          enum: [compliant, warning, violation]
+          description: Compliance status
+      required:
+        - id
+        - contract_code
+        - exchange
+
+    Transaction:
+      type: object
+      properties:
+        id:
+          type: integer
+        trade_date:
+          type: string
+          format: date
+        contract_code:
+          type: string
+        quantity:
+          type: integer
+          description: Transaction quantity (positive for buy, negative for sell)
+        price:
+          type: number
+          format: float
+        trader_id:
+          type: integer
+        company_id:
+          type: integer
+        status:
+          type: string
+          enum: [pending, approved, rejected]
+      required:
+        - id
+        - trade_date
+        - contract_code
+        - quantity
+
+    Alert:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        message:
+          type: string
+        severity:
+          type: string
+          enum: [info, warning, critical]
+        category:
+          type: string
+          enum: [limit, compliance, system]
+        unread:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+      required:
+        - id
+        - title
+        - severity
+
+security:
+  - BearerAuth: []
+
+paths:
+  # Authentication Endpoints
+  /api/auth/detect-auth-method:
+    post:
+      tags:
+        - Authentication
+      summary: Detect authentication method for email
+      description: Determines if an email uses password, SAML, or OAuth authentication
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+              required:
+                - email
+      responses:
+        '200':
+          description: Authentication method detected
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  auth_method:
+                    type: string
+                    enum: [password, saml, oauth]
+                  provider_name:
+                    type: string
+                    nullable: true
+                  requires_password:
+                    type: boolean
+                  sso_login_url:
+                    type: string
+                    format: uri
+                  message:
+                    type: string
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: User login
+      description: Authenticate user and receive JWT tokens
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+              required:
+                - email
+                - password
+            examples:
+              trader:
+                summary: Trader login
+                value:
+                  email: trader@example.com
+                  password: SecurePass123!
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    description: JWT access token (expires in 1 hour)
+                  refresh_token:
+                    type: string
+                    description: Refresh token (expires in 7 days)
+                  user:
+                    $ref: '#/components/schemas/User'
+              examples:
+                success:
+                  value:
+                    token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                    refresh_token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                    user:
+                      id: 1
+                      email: trader@example.com
+                      name: John Trader
+                      role: trader
+                      company_id: 5
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalid:
+                  value:
+                    error: Invalid email or password
+
+  /api/auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: User registration
+      description: Register a new user account
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+                  minLength: 8
+                name:
+                  type: string
+              required:
+                - email
+                - password
+                - name
+      responses:
+        '201':
+          description: Registration successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                  refresh_token:
+                    type: string
+                  user:
+                    $ref: '#/components/schemas/User'
+        '400':
+          description: Invalid request or email already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/auth/refresh:
+    post:
+      tags:
+        - Authentication
+      summary: Refresh access token
+      description: Get a new access token using a refresh token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refresh_token:
+                  type: string
+              required:
+                - refresh_token
+      responses:
+        '200':
+          description: Token refreshed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                  refresh_token:
+                    type: string
+        '401':
+          description: Invalid or expired refresh token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/auth/me:
+    get:
+      tags:
+        - Authentication
+      summary: Get current user profile
+      description: Retrieve the authenticated user's profile information
+      responses:
+        '200':
+          description: User profile retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/auth/logout:
+    post:
+      tags:
+        - Authentication
+      summary: User logout
+      description: Invalidate the current session token
+      responses:
+        '200':
+          description: Logged out successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/auth/forgot-password:
+    post:
+      tags:
+        - Authentication
+      summary: Request password reset
+      description: Send password reset email to user
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+              required:
+                - email
+      responses:
+        '200':
+          description: Password reset email sent (always returns 200 for security)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+
+  /api/auth/reset-password:
+    post:
+      tags:
+        - Authentication
+      summary: Reset password
+      description: Reset user password with token from email
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+                new_password:
+                  type: string
+                  format: password
+                  minLength: 8
+              required:
+                - token
+                - new_password
+      responses:
+        '200':
+          description: Password reset successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+        '400':
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # Users Endpoints
+  /api/users/profile:
+    get:
+      tags:
+        - Users
+      summary: Get user profile
+      description: Retrieve the authenticated user's detailed profile
+      responses:
+        '200':
+          description: Profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  user:
+                    $ref: '#/components/schemas/User'
+    put:
+      tags:
+        - Users
+      summary: Update user profile
+      description: Update the authenticated user's profile information
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                phone:
+                  type: string
+      responses:
+        '200':
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  user:
+                    $ref: '#/components/schemas/User'
+
+  /api/users/settings:
+    get:
+      tags:
+        - Users
+      summary: Get user settings
+      description: Retrieve user preferences and notification settings
+      responses:
+        '200':
+          description: Settings retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  settings:
+                    type: object
+                    properties:
+                      notifications_enabled:
+                        type: boolean
+                      email_alerts:
+                        type: boolean
+                      theme:
+                        type: string
+                        enum: [light, dark, auto]
+    put:
+      tags:
+        - Users
+      summary: Update user settings
+      description: Update user preferences and notification settings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                notifications_enabled:
+                  type: boolean
+                email_alerts:
+                  type: boolean
+                theme:
+                  type: string
+                  enum: [light, dark, auto]
+      responses:
+        '200':
+          description: Settings updated successfully
+
+  # Dashboard Endpoints
+  /api/dashboard:
+    get:
+      tags:
+        - Dashboard
+      summary: Get dashboard data
+      description: Retrieve overview dashboard data including position summaries and alerts
+      responses:
+        '200':
+          description: Dashboard data retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      total_positions:
+                        type: integer
+                      positions_at_risk:
+                        type: integer
+                      compliance_rate:
+                        type: number
+                        format: float
+                      recent_alerts:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Alert'
+                      top_positions:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/PositionLimit'
+
+  /api/dashboard/performance:
+    get:
+      tags:
+        - Dashboard
+      summary: Get performance metrics
+      description: Retrieve trading performance and P&L metrics
+      responses:
+        '200':
+          description: Performance metrics retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  metrics:
+                    type: object
+                    properties:
+                      total_pnl:
+                        type: number
+                        format: float
+                      daily_pnl:
+                        type: number
+                        format: float
+                      monthly_pnl:
+                        type: number
+                        format: float
+                      win_rate:
+                        type: number
+                        format: float
+
+  # Position Limits Endpoints
+  /api/position-limits:
+    get:
+      tags:
+        - Position Limits
+      summary: List position limits
+      description: Retrieve all position limits with optional filtering
+      parameters:
+        - name: contract_code
+          in: query
+          schema:
+            type: string
+          description: Filter by contract code
+        - name: exchange
+          in: query
+          schema:
+            type: string
+          description: Filter by exchange
+        - name: prioritization
+          in: query
+          schema:
+            type: string
+            enum: [high, medium, low]
+          description: Filter by priority level
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [compliant, warning, violation]
+          description: Filter by compliance status
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: Position limits retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PositionLimit'
+                  meta:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                      page:
+                        type: integer
+                      page_size:
+                        type: integer
+                      total_pages:
+                        type: integer
+
+  /api/position-limits/{id}:
+    get:
+      tags:
+        - Position Limits
+      summary: Get position limit by ID
+      description: Retrieve detailed information for a specific position limit
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Position limit ID
+      responses:
+        '200':
+          description: Position limit retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/PositionLimit'
+        '404':
+          description: Position limit not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/position-limits/{id}/history:
+    get:
+      tags:
+        - Position Limits
+      summary: Get position history
+      description: Retrieve historical position data for a specific limit
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: start_date
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: end_date
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Position history retrieved successfully
+
+  # Transactions Endpoints
+  /api/transactions:
+    get:
+      tags:
+        - Position Limits
+      summary: List transactions
+      description: Retrieve all transactions with optional filtering
+      parameters:
+        - name: contract_code
+          in: query
+          schema:
+            type: string
+        - name: start_date
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: end_date
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, approved, rejected]
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+      responses:
+        '200':
+          description: Transactions retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Transaction'
+                  meta:
+                    $ref: '#/components/schemas/PaginationParams'
+    post:
+      tags:
+        - Position Limits
+      summary: Create transaction
+      description: Create a new trading transaction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                trade_date:
+                  type: string
+                  format: date
+                contract_code:
+                  type: string
+                quantity:
+                  type: integer
+                price:
+                  type: number
+                  format: float
+              required:
+                - trade_date
+                - contract_code
+                - quantity
+      responses:
+        '201':
+          description: Transaction created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Transaction'
+        '400':
+          description: Invalid transaction data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # Alerts Endpoints
+  /api/alerts:
+    get:
+      tags:
+        - Alerts
+      summary: List alerts
+      description: Retrieve all alerts for the authenticated user
+      parameters:
+        - name: unread
+          in: query
+          schema:
+            type: boolean
+          description: Filter by read/unread status
+        - name: severity
+          in: query
+          schema:
+            type: string
+            enum: [info, warning, critical]
+          description: Filter by severity
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+          description: Maximum number of alerts to return
+      responses:
+        '200':
+          description: Alerts retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Alert'
+
+  /api/alerts/{id}/read:
+    put:
+      tags:
+        - Alerts
+      summary: Mark alert as read
+      description: Mark a specific alert as read
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Alert marked as read
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+
+  /api/alerts/mark-all-read:
+    put:
+      tags:
+        - Alerts
+      summary: Mark all alerts as read
+      description: Mark all unread alerts as read for the authenticated user
+      responses:
+        '200':
+          description: All alerts marked as read
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string

@@ -1,0 +1,80 @@
+name = "trade-nexus-api"
+main = "src/index.ts"
+compatibility_date = "2024-10-01"
+compatibility_flags = ["nodejs_compat"]
+
+# D1 Database binding
+[[d1_databases]]
+binding = "DB"
+database_name = "trade-nexus-db"
+database_id = "9f3f19c6-1920-4815-9224-be49ffc3877d"
+
+# KV namespace for caching
+[[kv_namespaces]]
+binding = "CACHE"
+id = "e1025aa74fdc49d18b39199cc438bfa6"
+
+# R2 bucket for document storage
+[[r2_buckets]]
+bucket_name = "trade-nexus-documents"
+binding = "DOCUMENTS"
+
+# Environment variables
+# NOTE: JWT_SECRET should be set as a secret, not a var
+# Run: wrangler secret put JWT_SECRET (production)
+# Run: wrangler secret put JWT_SECRET --env dev (development)
+# For local development, create a .dev.vars file with: JWT_SECRET=your-dev-secret
+[vars]
+NODE_ENV = "production"
+FRONTEND_URL = "https://trade-nexus-frontend.pages.dev"
+
+# Development Environment
+[env.dev]
+name = "trade-nexus-api-dev"
+
+[env.dev.vars]
+NODE_ENV = "development"
+FRONTEND_URL = "https://dev.trade-nexus-frontend.pages.dev"
+
+[[env.dev.d1_databases]]
+binding = "DB"
+database_name = "trade-nexus-db-dev"
+database_id = "bb1b7498-7921-4b5c-bcc6-e6ee2ff2dcec"
+
+[[env.dev.kv_namespaces]]
+binding = "CACHE"
+id = "fdcb67c3bc15406b91ec743be5993d94"
+
+[[env.dev.r2_buckets]]
+bucket_name = "trade-nexus-documents-dev"
+binding = "DOCUMENTS"
+
+# Production Environment (explicit configuration)
+[env.production]
+name = "trade-nexus-api"
+
+[env.production.vars]
+NODE_ENV = "production"
+FRONTEND_URL = "https://trade-nexus-frontend.pages.dev"
+
+[[env.production.d1_databases]]
+binding = "DB"
+database_name = "trade-nexus-db"
+database_id = "9f3f19c6-1920-4815-9224-be49ffc3877d"
+
+[[env.production.kv_namespaces]]
+binding = "CACHE"
+id = "e1025aa74fdc49d18b39199cc438bfa6"
+
+[[env.production.r2_buckets]]
+bucket_name = "trade-nexus-documents"
+binding = "DOCUMENTS"
+
+# Cron triggers for scheduled jobs
+[triggers]
+crons = ["0 1 * * *", "0 4 * * *", "0 5 * * *", "0 23 * * *", "*/15 * * * *"]
+# 0 1 * * * = Daily at 1:00 AM UTC (Import ICE data)
+# 0 4 * * * = Daily at 4:00 AM UTC (Run calculations)
+# 0 5 * * * = Daily at 5:00 AM UTC (Generate regulatory filings)
+# 0 23 * * * = Daily at 11:00 PM UTC (Export to time series)
+# */15 * * * * = Every 15 minutes (Real-time monitoring & breach detection)

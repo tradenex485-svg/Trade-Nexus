@@ -1,0 +1,128 @@
+'use client';
+
+import React, { useRef } from 'react';
+import * as ReactWindow from 'react-window';
+import { cn } from '@/lib/utils';
+
+const List = ReactWindow.FixedSizeList;
+
+export interface Column<T = any> {
+  key: string;
+  header: string;
+  width?: string;
+  align?: 'left' | 'center' | 'right';
+  render: (item: T, index: number) => React.ReactNode;
+  headerClassName?: string;
+  cellClassName?: string;
+}
+
+export interface VirtualizedTableProps<T = any> {
+  data: T[];
+  columns: Column<T>[];
+  rowHeight?: number;
+  height?: number;
+  className?: string;
+  headerClassName?: string;
+  rowClassName?: string | ((item: T, index: number) => string);
+  emptyMessage?: string;
+  onRowClick?: (item: T, index: number) => void;
+}
+
+export function VirtualizedTable<T = any>({
+  data,
+  columns,
+  rowHeight = 60,
+  height = 600,
+  className,
+  headerClassName,
+  rowClassName,
+  emptyMessage = 'No data available',
+  onRowClick,
+}: VirtualizedTableProps<T>) {
+  const listRef = useRef<List>(null);
+
+  const Row = ({ index, style }: { index: number; style: React.CSSProperties }) => {
+    const item = data[index];
+    const isClickable = !!onRowClick;
+    const rowClass = typeof rowClassName === 'function' ? rowClassName(item, index) : rowClassName;
+
+    return (
+      <div
+        style={style}
+        className={cn(
+          'flex items-center border-b border-white/10',
+          'hover:bg-white/5 transition-colors',
+          isClickable && 'cursor-pointer',
+          rowClass
+        )}
+        onClick={() => onRowClick?.(item, index)}
+      >
+        {columns.map((column, colIndex) => (
+          <div
+            key={`${index}-${column.key}-${colIndex}`}
+            className={cn(
+              'px-4 py-3',
+              column.width || 'flex-1',
+              column.align === 'right' && 'text-right',
+              column.align === 'center' && 'text-center',
+              column.cellClassName
+            )}
+          >
+            {column.render(item, index)}
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  if (data.length === 0) {
+    return (
+      <div className={cn('glass border border-white/10 rounded-lg', className)}>
+        <div className="text-center py-12">
+          <p className="text-slate-400">{emptyMessage}</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={cn('glass border border-white/10 rounded-lg overflow-hidden', className)}>
+      {/* Header */}
+      <div
+        className={cn(
+          'flex items-center border-b border-white/10 bg-slate-800/50',
+          headerClassName
+        )}
+      >
+        {columns.map((column, index) => (
+          <div
+            key={`header-${column.key}-${index}`}
+            className={cn(
+              'px-4 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider',
+              column.width || 'flex-1',
+              column.align === 'right' && 'text-right',
+              column.align === 'center' && 'text-center',
+              column.headerClassName
+            )}
+          >
+            {column.header}
+          </div>
+        ))}
+      </div>
+
+      {/* Virtualized Body */}
+      <List
+        ref={listRef}
+        height={height}
+        itemCount={data.length}
+        itemSize={rowHeight}
+        width="100%"
+        overscanCount={5}
+      >
+        {Row}
+      </List>
+    </div>
+  );
+}
+
+export default VirtualizedTable;

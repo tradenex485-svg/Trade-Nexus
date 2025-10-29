@@ -1,0 +1,78 @@
+{
+  "root": true,
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "ecmaVersion": 2022,
+    "sourceType": "module",
+    "project": "./tsconfig.json"
+  },
+  "env": {
+    "es2022": true,
+    "worker": true,
+    "node": true
+  },
+  "extends": [
+    "eslint:recommended",
+    "plugin:@typescript-eslint/recommended",
+    "plugin:@typescript-eslint/recommended-requiring-type-checking"
+  ],
+  "plugins": [
+    "@typescript-eslint"
+  ],
+  "rules": {
+    // Error Prevention
+    "no-console": ["warn", { "allow": ["error", "warn"] }],
+    "@typescript-eslint/no-unused-vars": ["error", {
+      "argsIgnorePattern": "^_",
+      "varsIgnorePattern": "^_"
+    }],
+    "@typescript-eslint/no-explicit-any": "warn",
+    "@typescript-eslint/explicit-function-return-type": ["warn", {
+      "allowExpressions": true,
+      "allowTypedFunctionExpressions": true
+    }],
+    "@typescript-eslint/no-floating-promises": "error",
+    "@typescript-eslint/no-misused-promises": "error",
+    "@typescript-eslint/await-thenable": "error",
+
+    // Code Quality
+    "max-lines-per-function": ["warn", {
+      "max": 150,
+      "skipBlankLines": true,
+      "skipComments": true
+    }],
+    "complexity": ["warn", 15],
+    "max-depth": ["warn", 4],
+    "max-params": ["warn", 5],
+    "no-duplicate-imports": "error",
+    "no-else-return": "warn",
+    "prefer-const": "error",
+    "no-var": "error",
+
+    // Security
+    "no-eval": "error",
+    "no-implied-eval": "error",
+    "no-new-func": "error",
+    "@typescript-eslint/no-unsafe-assignment": "warn",
+    "@typescript-eslint/no-unsafe-member-access": "warn",
+    "@typescript-eslint/no-unsafe-call": "warn",
+    "@typescript-eslint/no-unsafe-return": "warn",
+
+    // Style (non-critical)
+    "quotes": ["warn", "single", { "avoidEscape": true }],
+    "semi": ["warn", "always"],
+    "comma-dangle": ["warn", "always-multiline"],
+    "object-curly-spacing": ["warn", "always"],
+    "array-bracket-spacing": ["warn", "never"],
+
+    // Disable rules that conflict with Cloudflare Workers
+    "@typescript-eslint/no-var-requires": "off"
+  },
+  "ignorePatterns": [
+    "node_modules/",
+    "dist/",
+    "*.config.js",
+    "*.config.mjs",
+    "test/"
+  ]
+}

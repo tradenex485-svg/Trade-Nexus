@@ -1,0 +1,280 @@
+-- Migration: Add Performance Indexes
+-- Created: 2025-01-22
+-- Description: Adds indexes to improve query performance for frequently accessed tables
+
+-- ============================================================================
+-- Position Limits Indexes
+-- ============================================================================
+
+-- Index for active calculations by date (used in dashboard queries)
+CREATE INDEX IF NOT EXISTS idx_limit_calculations_active_date
+ON limit_calculations(is_active, as_of_date DESC)
+WHERE is_active = 1;
+
+-- Index for commodity lookups with active filter
+CREATE INDEX IF NOT EXISTS idx_limit_calculations_commodity_active
+ON limit_calculations(reporting_limit_code, is_active, as_of_date DESC);
+
+-- Index for market location queries
+CREATE INDEX IF NOT EXISTS idx_limit_calculations_market
+ON limit_calculations(mkt_index, contract_month, is_active);
+
+-- Index for prioritization filtering (breach detection)
+CREATE INDEX IF NOT EXISTS idx_limit_calculations_prioritization
+ON limit_calculations(prioritization, is_active, pos_pct DESC)
+WHERE is_active = 1;
+
+-- Index for limit type filtering
+CREATE INDEX IF NOT EXISTS idx_limit_calculations_limit_type
+ON limit_calculations(limit_type, is_active, as_of_date DESC);
+
+-- ============================================================================
+-- Transactions Indexes
+-- ============================================================================
+
+-- Index for trade date range queries (most common)
+CREATE INDEX IF NOT EXISTS idx_transactions_trade_date
+ON transactions(trade_date DESC);
+
+-- Index for market location and contract month (position aggregation)
+CREATE INDEX IF NOT EXISTS idx_transactions_market_contract
+ON transactions(market_location, contract_month, trade_date DESC);
+
+-- Index for trader-specific queries
+CREATE INDEX IF NOT EXISTS idx_transactions_trader
+ON transactions(trader_id, trade_date DESC)
+WHERE trader_id IS NOT NULL;
+
+-- Index for company-scoped queries
+CREATE INDEX IF NOT EXISTS idx_transactions_company
+ON transactions(company_id, trade_date DESC)
+WHERE company_id IS NOT NULL;
+
+-- Composite index for aggregation queries
+CREATE INDEX IF NOT EXISTS idx_transactions_aggregation
+ON transactions(market_location, contract_month, trader_id, trade_date);
+
+-- ============================================================================
+-- Alerts Indexes
+-- ============================================================================
+
+-- Index for unread alerts by user (most common alert query)
+CREATE INDEX IF NOT EXISTS idx_alerts_user_unread
+ON alerts(user_id, read, created_at DESC);
+
+-- Index for unacknowledged alerts
+CREATE INDEX IF NOT EXISTS idx_alerts_unacknowledged
+ON alerts(acknowledged, severity, created_at DESC)
+WHERE acknowledged = 0;
+
+-- Index for commodity-specific alerts
+CREATE INDEX IF NOT EXISTS idx_alerts_commodity
+ON alerts(commodity_code, severity, created_at DESC)
+WHERE commodity_code IS NOT NULL;
+
+-- Index for limit calculation references
+CREATE INDEX IF NOT EXISTS idx_alerts_limit_calculation
+ON alerts(limit_calculation_id, created_at DESC)
+WHERE limit_calculation_id IS NOT NULL;
+
+-- ============================================================================
+-- Market Limits Indexes
+-- ============================================================================
+
+-- Index for active limits by commodity
+CREATE INDEX IF NOT EXISTS idx_market_limits_commodity_active
+ON market_limits(commodity_code, is_active)
+WHERE is_active = 1;
+
+-- Index for exchange filtering
+CREATE INDEX IF NOT EXISTS idx_market_limits_exchange
+ON market_limits(exchange_code, is_active)
+WHERE exchange_code IS NOT NULL AND is_active = 1;
+
+-- Index for effective date queries
+CREATE INDEX IF NOT EXISTS idx_market_limits_effective_date
+ON market_limits(effective_date DESC, is_active);
+
+-- ============================================================================
+-- Compliance Audit Log Indexes
+-- ============================================================================
+
+-- Index for user audit trail
+CREATE INDEX IF NOT EXISTS idx_compliance_audit_log_user
+ON compliance_audit_log(user_id, timestamp DESC);
+
+-- Index for action type filtering
+CREATE INDEX IF NOT EXISTS idx_compliance_audit_log_action
+ON compliance_audit_log(action, timestamp DESC);
+
+-- Index for entity tracking
+CREATE INDEX IF NOT EXISTS idx_compliance_audit_log_entity
+ON compliance_audit_log(entity_type, entity_id, timestamp DESC);
+
+-- Index for date range queries
+CREATE INDEX IF NOT EXISTS idx_compliance_audit_log_timestamp
+ON compliance_audit_log(timestamp DESC);
+
+-- ============================================================================
+-- Users and Authentication Indexes
+-- ============================================================================
+
+-- Index for email lookup (login)
+CREATE INDEX IF NOT EXISTS idx_users_email
+ON users(email)
+WHERE is_active = 1;
+
+-- Index for company-scoped user queries
+CREATE INDEX IF NOT EXISTS idx_users_company
+ON users(company_id, is_active)
+WHERE company_id IS NOT NULL;
+
+-- Index for role-based queries
+CREATE INDEX IF NOT EXISTS idx_users_role
+ON users(role_id, is_active);
+
+-- Index for password resets by user
+CREATE INDEX IF NOT EXISTS idx_password_resets_user
+ON password_resets(user_id, expires_at DESC);
+
+-- Index for reset token lookup
+CREATE INDEX IF NOT EXISTS idx_password_resets_token
+ON password_resets(reset_token, expires_at)
+WHERE expires_at > datetime('now');
+
+-- ============================================================================
+-- API Keys Indexes
+-- ============================================================================
+
+-- Index for active API keys by key hash (authentication)
+CREATE INDEX IF NOT EXISTS idx_api_keys_hash
+ON api_keys(key_hash, is_active)
+WHERE is_active = 1;
+
+-- Index for user's API keys
+CREATE INDEX IF NOT EXISTS idx_api_keys_user
+ON api_keys(user_id, is_active);
+
+-- Index for expiration monitoring
+CREATE INDEX IF NOT EXISTS idx_api_keys_expiration
+ON api_keys(expires_at, is_active)
+WHERE expires_at IS NOT NULL AND is_active = 1;
+
+-- ============================================================================
+-- Exemptions Indexes
+-- ============================================================================
+
+-- Index for active exemptions by commodity
+CREATE INDEX IF NOT EXISTS idx_exemptions_commodity_active
+ON exemptions(commodity_code, approval_status, end_date)
+WHERE approval_status = 'approved';
+
+-- Index for pending approvals
+CREATE INDEX IF NOT EXISTS idx_exemptions_pending
+ON exemptions(approval_status, created_at DESC)
+WHERE approval_status = 'pending';
+
+-- Index for date range validity
+CREATE INDEX IF NOT EXISTS idx_exemptions_date_range
+ON exemptions(start_date, end_date, approval_status);
+
+-- Index for company-scoped exemptions
+CREATE INDEX IF NOT EXISTS idx_exemptions_company
+ON exemptions(company_id, approval_status)
+WHERE company_id IS NOT NULL;
+
+-- ============================================================================
+-- Traders Indexes
+-- ============================================================================
+
+-- Index for active traders by company
+CREATE INDEX IF NOT EXISTS idx_traders_company_active
+ON traders(company_id, is_active)
+WHERE is_active = 1;
+
+-- Index for external trader ID lookup
+CREATE INDEX IF NOT EXISTS idx_traders_external_id
+ON traders(trader_id_external)
+WHERE trader_id_external IS NOT NULL;
+
+-- ============================================================================
+-- Companies Indexes
+-- ============================================================================
+
+-- Index for active companies
+CREATE INDEX IF NOT EXISTS idx_companies_active
+ON companies(is_active, name)
+WHERE is_active = 1;
+
+-- Index for LEI code lookup
+CREATE INDEX IF NOT EXISTS idx_companies_lei
+ON companies(lei_code)
+WHERE lei_code IS NOT NULL;
+
+-- ============================================================================
+-- Regulatory Filings Indexes
+-- ============================================================================
+
+-- Index for filing status and due date
+CREATE INDEX IF NOT EXISTS idx_regulatory_filings_status_due
+ON regulatory_filings(status, due_date);
+
+-- Index for filing type and period
+CREATE INDEX IF NOT EXISTS idx_regulatory_filings_type_period
+ON regulatory_filings(filing_type, reporting_period_start DESC);
+
+-- Index for pending filings
+CREATE INDEX IF NOT EXISTS idx_regulatory_filings_pending
+ON regulatory_filings(status, due_date)
+WHERE status IN ('pending', 'generated');
+
+-- ============================================================================
+-- Performance Metrics Indexes
+-- ============================================================================
+
+-- Index for performance metrics by timestamp
+CREATE INDEX IF NOT EXISTS idx_performance_metrics_timestamp
+ON performance_metrics(created_at DESC);
+
+-- Index for slow query detection
+CREATE INDEX IF NOT EXISTS idx_performance_metrics_slow
+ON performance_metrics(duration DESC, created_at DESC)
+WHERE duration > 1000; -- Queries slower than 1 second
+
+-- ============================================================================
+-- Rate Limiting Indexes
+-- ============================================================================
+
+-- Index for rate limit tracking by IP
+CREATE INDEX IF NOT EXISTS idx_rate_limits_ip_timestamp
+ON rate_limits(ip_address, timestamp DESC);
+
+-- Index for rate limit tracking by user
+CREATE INDEX IF NOT EXISTS idx_rate_limits_user_timestamp
+ON rate_limits(user_id, timestamp DESC)
+WHERE user_id IS NOT NULL;
+
+-- ============================================================================
+-- Comments for Index Usage
+-- ============================================================================
+
+-- These indexes are designed to optimize:
+-- 1. Dashboard queries (active calculations, recent alerts)
+-- 2. Position aggregation (transactions by market/commodity)
+-- 3. Breach detection (high utilization positions)
+-- 4. User-specific queries (alerts, audit logs, API keys)
+-- 5. Date range filtering (common in reporting)
+-- 6. Authentication lookups (email, API key hash)
+-- 7. Compliance queries (pending exemptions, regulatory filings)
+
+-- Index maintenance notes:
+-- - SQLite automatically maintains indexes
+-- - Indexes increase write time but significantly improve read performance
+-- - Monitor query performance using EXPLAIN QUERY PLAN
+-- - Consider dropping unused indexes if they impact write performance
+
+-- Query to check index usage (run periodically):
+-- SELECT name, tbl_name FROM sqlite_master WHERE type = 'index' ORDER BY tbl_name, name;
+
+-- Query to analyze query performance:
+-- EXPLAIN QUERY PLAN SELECT * FROM limit_calculations WHERE is_active = 1 ORDER BY as_of_date DESC;
