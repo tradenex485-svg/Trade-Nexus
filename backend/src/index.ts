@@ -91,7 +91,7 @@ app.use('*', cors({
     }
 
     // Allow all Cloudflare Pages preview deployments for trade-nexus-frontend
-    if (origin && origin.match(/^https:\/\/[a-f0-9]+\.trade-nexus-frontend\.pages\.dev$/)) {
+    if (origin && origin.match(/^https:\/\/[a-f0-9]+\.trade-nexus-frontend(-[a-z0-9]+)?\.pages\.dev$/)) {
       return origin;
     }
 
