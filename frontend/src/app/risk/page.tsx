@@ -980,44 +980,47 @@ export default function RiskManagementPage() {
                                   <h4 className="text-white font-semibold text-sm mb-2">Test Results:</h4>
                                   <div className="grid grid-cols-2 gap-2 text-sm">
                                     <div>
-                                      <p className="text-slate-400">Pre-Shock VaR:</p>
+                                      <p className="text-slate-400">Pre-Shock Utilization:</p>
                                       <p className="text-white font-semibold">
-                                        {result.pre_shock_var?.toFixed(2) || '0.00'}%
+                                        {result.pre_shock?.avg_utilization?.toFixed(2) || '0.00'}%
                                       </p>
                                     </div>
                                     <div>
-                                      <p className="text-slate-400">Post-Shock VaR:</p>
+                                      <p className="text-slate-400">Post-Shock Utilization:</p>
                                       <p className="text-white font-semibold">
-                                        {result.post_shock_var?.toFixed(2) || '0.00'}%
+                                        {result.post_shock?.avg_utilization?.toFixed(2) || '0.00'}%
                                       </p>
                                     </div>
                                     <div>
-                                      <p className="text-slate-400">VaR Change:</p>
+                                      <p className="text-slate-400">Utilization Change:</p>
                                       <p className={cn(
                                         "font-semibold",
-                                        (result.var_change || 0) > 0 ? "text-red-400" : "text-green-400"
+                                        (result.impact?.utilization_change_pct || 0) > 0 ? "text-red-400" : "text-green-400"
                                       )}>
-                                        {result.var_change > 0 ? '+' : ''}{result.var_change?.toFixed(2) || '0.00'}%
+                                        {(result.impact?.utilization_change_pct || 0) > 0 ? '+' : ''}{result.impact?.utilization_change_pct?.toFixed(2) || '0.00'}%
                                       </p>
                                     </div>
                                     <div>
-                                      <p className="text-slate-400">Positions Breached:</p>
-                                      <p className="text-red-400 font-semibold">
-                                        {result.positions_breached || 0}
+                                      <p className="text-slate-400">Breached Positions:</p>
+                                      <p className={cn(
+                                        "font-semibold",
+                                        (result.post_shock?.breached_positions || 0) > 0 ? "text-red-400" : "text-green-400"
+                                      )}>
+                                        {result.post_shock?.breached_positions || 0}
                                       </p>
                                     </div>
                                   </div>
-                                  {result.most_affected && result.most_affected.length > 0 && (
+                                  {result.impact?.worst_affected && result.impact.worst_affected.length > 0 && (
                                     <div>
                                       <p className="text-slate-400 text-xs mb-1">Most Affected:</p>
                                       <div className="flex flex-wrap gap-1">
-                                        {result.most_affected.slice(0, 3).map((item: any, idx: number) => (
+                                        {result.impact.worst_affected.slice(0, 3).map((item: any, idx: number) => (
                                           <Badge
                                             key={idx}
                                             variant="outline"
                                             className="text-xs text-orange-400 border-orange-500"
                                           >
-                                            {item.commodity}
+                                            {item.commodity} ({item.impact})
                                           </Badge>
                                         ))}
                                       </div>
