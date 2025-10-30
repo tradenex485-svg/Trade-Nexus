@@ -21,6 +21,7 @@ import {
   User,
   Calendar,
   TrendingUp,
+  Trash2,
 } from 'lucide-react';
 
 interface HedgeExemption {
@@ -33,6 +34,7 @@ interface HedgeExemption {
   current_position: number;
   business_justification: string;
   status: string;
+  user_id: number;
   requested_by: number;
   requested_by_name: string;
   requested_at: string;
@@ -47,13 +49,15 @@ interface HedgeExemption {
 
 export default function PendingExemptionsPage() {
   const router = useRouter();
-  const { token } = useAuthStore();
+  const { user, token } = useAuthStore();
   const [exemptions, setExemptions] = useState<HedgeExemption[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [selectedExemption, setSelectedExemption] = useState<HedgeExemption | null>(null);
   const [showApprovalModal, setShowApprovalModal] = useState(false);
   const [showDenialModal, setShowDenialModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [approvalNotes, setApprovalNotes] = useState('');
   const [denialReason, setDenialReason] = useState('');
@@ -108,6 +112,8 @@ export default function PendingExemptionsPage() {
     if (!selectedExemption) return;
 
     setActionLoading(true);
+    setError(null);
+    setSuccess(null);
 
     try {
       const response = await hedgeExemptionsApi.approve(
@@ -116,15 +122,16 @@ export default function PendingExemptionsPage() {
       );
 
       if (response.success) {
-        alert('Exemption approved successfully');
+        setSuccess('Exemption approved successfully');
         setShowApprovalModal(false);
         setApprovalNotes('');
+        setSelectedExemption(null);
         loadPendingExemptions();
       } else {
-        alert(response.message || 'Failed to approve exemption');
+        setError(response.message || 'Failed to approve exemption');
       }
     } catch (err: any) {
-      alert(err.message || 'Failed to approve exemption');
+      setError(err.message || 'Failed to approve exemption');
     } finally {
       setActionLoading(false);
     }
@@ -132,28 +139,67 @@ export default function PendingExemptionsPage() {
 
   async function handleDeny() {
     if (!selectedExemption || !denialReason.trim()) {
-      alert('Denial reason is required');
+      setError('Denial reason is required');
       return;
     }
 
     setActionLoading(true);
+    setError(null);
+    setSuccess(null);
 
     try {
       const response = await hedgeExemptionsApi.deny(selectedExemption.id, denialReason);
 
       if (response.success) {
-        alert('Exemption denied');
+        setSuccess('Exemption denied');
         setShowDenialModal(false);
         setDenialReason('');
+        setSelectedExemption(null);
         loadPendingExemptions();
       } else {
-        alert(response.message || 'Failed to deny exemption');
+        setError(response.message || 'Failed to deny exemption');
       }
     } catch (err: any) {
-      alert(err.message || 'Failed to deny exemption');
+      setError(err.message || 'Failed to deny exemption');
     } finally {
       setActionLoading(false);
     }
+  }
+
+  async function handleDelete() {
+    if (!selectedExemption || !token) return;
+
+    setActionLoading(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const response = await hedgeExemptionsApi.delete(selectedExemption.id);
+
+      if (response.success) {
+        setSuccess('Exemption request deleted successfully');
+        setShowDeleteModal(false);
+        setSelectedExemption(null);
+        await loadPendingExemptions();
+      } else {
+        setError(response.message || 'Failed to delete exemption');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to delete exemption');
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  function canDeleteExemption(exemption: HedgeExemption): boolean {
+    // Only allow deleting pending exemptions
+    if (exemption.status !== 'pending') return false;
+
+    // Super admin can delete any pending request
+    if (user?.role_id === 5) return true;
+
+    // Users can delete their own pending requests
+    return exemption.user_id === user?.userId;
   }
 
   const getExemptionTypeLabel = (type: string) => {
@@ -206,7 +252,14 @@ export default function PendingExemptionsPage() {
           </div>
         </div>
 
-        {/* Error Alert */}
+        {/* Success/Error Alerts */}
+        {success && (
+          <Alert className="mb-6 border-green-500/50 bg-green-500/10">
+            <CheckCircle className="h-5 w-5 text-green-400" />
+            <AlertDescription className="text-green-400">{success}</AlertDescription>
+          </Alert>
+        )}
+
         {error && (
           <Alert variant="destructive" className="mb-6">
             <AlertCircle className="h-5 w-5" />
@@ -328,6 +381,19 @@ export default function PendingExemptionsPage() {
                       <XCircle className="w-4 h-4 mr-2" />
                       Deny
                     </Button>
+                    {canDeleteExemption(exemption) && (
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setSelectedExemption(exemption);
+                          setShowDeleteModal(true);
+                        }}
+                        className="border-red-500/30 text-red-400 hover:bg-red-500/10 ml-auto"
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Delete
+                      </Button>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -453,6 +519,86 @@ export default function PendingExemptionsPage() {
                       setDenialReason('');
                     }}
                     disabled={actionLoading}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Delete Confirmation Modal */}
+        {showDeleteModal && selectedExemption && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowDeleteModal(false);
+              setSelectedExemption(null);
+            }
+          }}>
+            <Card className="w-full max-w-md border-red-500/30" onClick={(e) => e.stopPropagation()}>
+              <CardHeader>
+                <CardTitle className="text-red-400">Delete Exemption Request</CardTitle>
+                <CardDescription>
+                  Are you sure you want to delete this exemption request?
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="bg-slate-700/50 rounded-lg p-4 space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">ID:</span>
+                    <span className="text-white font-mono">#{selectedExemption.id}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Commodity:</span>
+                    <span className="text-white">{selectedExemption.commodity_code}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Amount:</span>
+                    <span className="text-white font-mono">
+                      {selectedExemption.requested_amount.toLocaleString()} lots
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Requested By:</span>
+                    <span className="text-white">{selectedExemption.requested_by_name}</span>
+                  </div>
+                </div>
+
+                <Alert variant="destructive">
+                  <AlertCircle className="h-5 w-5" />
+                  <AlertDescription className="text-sm">
+                    This action cannot be undone. The exemption request will be permanently deleted.
+                  </AlertDescription>
+                </Alert>
+
+                <div className="flex items-center gap-3 pt-4">
+                  <Button
+                    onClick={handleDelete}
+                    disabled={actionLoading}
+                    variant="destructive"
+                    className="flex-1"
+                  >
+                    {actionLoading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Deleting...
+                      </>
+                    ) : (
+                      <>
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Delete Request
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setShowDeleteModal(false);
+                      setSelectedExemption(null);
+                    }}
+                    disabled={actionLoading}
+                    className="flex-1"
                   >
                     Cancel
                   </Button>
