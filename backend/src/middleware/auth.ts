@@ -66,7 +66,7 @@ export function authorize(...requiredPermissions: string[]) {
       FROM permissions p
       JOIN role_permissions rp ON p.id = rp.permission_id
       WHERE rp.role_id = ?
-    `).bind(user.roleId).all();
+    `).bind(user.role_id).all();
 
     const userPermissions = permissions.results.map((p: any) => p.permission_name);
 

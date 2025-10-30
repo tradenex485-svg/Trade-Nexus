@@ -3,9 +3,17 @@ import { authenticate, authorize } from '../middleware/auth';
 
 type Bindings = {
   DB: D1Database;
+  CACHE: KVNamespace;
+  DOCUMENTS: R2Bucket;
   SESSIONS: KVNamespace;
   JWT_SECRET: string;
   NODE_ENV: string;
+  FRONTEND_URL?: string;
+  SENTRY_DSN?: string;
+  TWILIO_ACCOUNT_SID?: string;
+  TWILIO_AUTH_TOKEN?: string;
+  TWILIO_PHONE_NUMBER?: string;
+  DATABASE_ENCRYPTION_KEY?: string;
 };
 
 export const riskThresholdsRoutes = new Hono<{ Bindings: Bindings }>();
@@ -14,7 +22,7 @@ export const riskThresholdsRoutes = new Hono<{ Bindings: Bindings }>();
  * GET /api/risk-thresholds
  * Get all risk thresholds
  */
-riskThresholdsRoutes.get('/', async (c) => {
+riskThresholdsRoutes.get('/', authenticate, async (c) => {
   try {
     const result = await c.env.DB.prepare(`
       SELECT * FROM risk_thresholds
@@ -44,7 +52,7 @@ riskThresholdsRoutes.get('/', async (c) => {
  * GET /api/risk-thresholds/:id
  * Get specific risk threshold
  */
-riskThresholdsRoutes.get('/:id', async (c) => {
+riskThresholdsRoutes.get('/:id', authenticate, async (c) => {
   try {
     const id = parseInt(c.req.param('id'));
 
@@ -85,7 +93,7 @@ riskThresholdsRoutes.get('/:id', async (c) => {
  * PUT /api/risk-thresholds/:id
  * Update risk threshold
  */
-riskThresholdsRoutes.put('/:id', authenticate, authorize('risk.configure'), async (c) => {
+riskThresholdsRoutes.put('/:id', authenticate, authorize('system.configure'), async (c) => {
   try {
     const id = parseInt(c.req.param('id'));
     const body = await c.req.json();
@@ -151,7 +159,7 @@ riskThresholdsRoutes.put('/:id', authenticate, authorize('risk.configure'), asyn
  * POST /api/risk-thresholds
  * Create new risk threshold
  */
-riskThresholdsRoutes.post('/', authenticate, authorize('risk.configure'), async (c) => {
+riskThresholdsRoutes.post('/', authenticate, authorize('system.configure'), async (c) => {
   try {
     const body = await c.req.json();
 
@@ -211,7 +219,7 @@ riskThresholdsRoutes.post('/', authenticate, authorize('risk.configure'), async 
  * DELETE /api/risk-thresholds/:id
  * Soft delete risk threshold
  */
-riskThresholdsRoutes.delete('/:id', authenticate, authorize('risk.configure'), async (c) => {
+riskThresholdsRoutes.delete('/:id', authenticate, authorize('system.configure'), async (c) => {
   try {
     const id = parseInt(c.req.param('id'));
 

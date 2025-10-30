@@ -21,6 +21,7 @@ This folder contains comprehensive test results for all Trade Nexus API endpoint
 | [PERFORMANCE_API_TEST_RESULTS.md](./PERFORMANCE_API_TEST_RESULTS.md) | System Performance & Rate Limiting | ✅ All Working | Refactored routing pattern, added RBAC |
 | [POSITION_MARKET_TRANSACTIONS_API_TEST_RESULTS.md](./POSITION_MARKET_TRANSACTIONS_API_TEST_RESULTS.md) | Position & Market Limits, Transactions | ✅ All Working | Fixed Bindings, frontend complete |
 | [PRE_TRADE_API_TEST_RESULTS.md](./PRE_TRADE_API_TEST_RESULTS.md) | Pre-Trade Validation | ✅ All Working | Fixed endpoint naming, frontend complete |
+| [RISK_THRESHOLDS_API_TEST_RESULTS.md](./RISK_THRESHOLDS_API_TEST_RESULTS.md) | Risk Thresholds Management | ✅ All Working | 4 critical bugs fixed, RBAC verified |
 
 ---
 
@@ -87,11 +88,18 @@ This folder contains comprehensive test results for all Trade Nexus API endpoint
 - **History:** Get validation history ✅
 - **Stats:** Get validation statistics ✅
 
+### Risk Thresholds APIs (5 endpoints)
+- **List:** Get all active risk thresholds ✅
+- **By ID:** Get risk threshold by ID ✅
+- **Create:** Create new risk threshold ✅
+- **Update:** Update risk threshold ✅
+- **Delete:** Soft delete risk threshold ✅
+
 ---
 
 ## 🔧 Issues Fixed
 
-### Critical Bugs (13)
+### Critical Bugs (17)
 1. **Users API - user.userId vs user.id mismatch** - Fixed in 11 locations
 2. **Users API - Non-existent database columns** - Removed desk_name, is_primary references
 3. **Users API - Undefined values in SQL** - Added null coalescing operators
@@ -105,6 +113,10 @@ This folder contains comprehensive test results for all Trade Nexus API endpoint
 11. **Performance API - No role-based access control** - Implemented system.configure permission check
 12. **Performance API - Duplicate middleware** - Removed duplicate optionalAuth to avoid conflicts
 13. **Position Limits - Incomplete Bindings type** - Added SESSIONS, JWT_SECRET, NODE_ENV to match other routes
+14. **Risk Thresholds - Missing authentication on GET endpoints** - Added authenticate middleware for consistency
+15. **Risk Thresholds - Non-existent risk.configure permission** - Changed to use system.configure permission
+16. **Risk Thresholds - Bindings type mismatch** - Added CACHE, DOCUMENTS, and all optional bindings
+17. **Risk Thresholds - Authorize middleware property access** - Fixed user.roleId to user.role_id
 
 ### Configuration Issues (2)
 1. **SAML - Missing encryption key** - Generated and configured DATABASE_ENCRYPTION_KEY
