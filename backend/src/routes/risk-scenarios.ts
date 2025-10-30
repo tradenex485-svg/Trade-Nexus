@@ -1,11 +1,20 @@
 import { Hono } from 'hono';
+import { authenticate, authorize } from '../middleware/auth';
 import { runStressTest } from '../services/risk-analytics';
 
 type Bindings = {
   DB: D1Database;
+  CACHE: KVNamespace;
+  DOCUMENTS: R2Bucket;
   SESSIONS: KVNamespace;
   JWT_SECRET: string;
   NODE_ENV: string;
+  FRONTEND_URL?: string;
+  SENTRY_DSN?: string;
+  TWILIO_ACCOUNT_SID?: string;
+  TWILIO_AUTH_TOKEN?: string;
+  TWILIO_PHONE_NUMBER?: string;
+  DATABASE_ENCRYPTION_KEY?: string;
 };
 
 export const riskScenariosRoutes = new Hono<{ Bindings: Bindings }>();
@@ -14,7 +23,7 @@ export const riskScenariosRoutes = new Hono<{ Bindings: Bindings }>();
  * GET /api/risk-scenarios
  * Get all risk scenarios
  */
-riskScenariosRoutes.get('/', async (c) => {
+riskScenariosRoutes.get('/', authenticate, async (c) => {
   try {
     const includeInactive = c.req.query('include_inactive') === 'true';
 
@@ -46,7 +55,7 @@ riskScenariosRoutes.get('/', async (c) => {
  * GET /api/risk-scenarios/:id
  * Get specific risk scenario
  */
-riskScenariosRoutes.get('/:id', async (c) => {
+riskScenariosRoutes.get('/:id', authenticate, async (c) => {
   try {
     const id = parseInt(c.req.param('id'));
 
@@ -87,7 +96,7 @@ riskScenariosRoutes.get('/:id', async (c) => {
  * POST /api/risk-scenarios
  * Create new risk scenario
  */
-riskScenariosRoutes.post('/', async (c) => {
+riskScenariosRoutes.post('/', authenticate, authorize('system.configure'), async (c) => {
   try {
     const body = await c.req.json();
 
@@ -148,7 +157,7 @@ riskScenariosRoutes.post('/', async (c) => {
  * PUT /api/risk-scenarios/:id
  * Update risk scenario (only custom scenarios can be updated)
  */
-riskScenariosRoutes.put('/:id', async (c) => {
+riskScenariosRoutes.put('/:id', authenticate, authorize('system.configure'), async (c) => {
   try {
     const id = parseInt(c.req.param('id'));
     const body = await c.req.json();
@@ -227,7 +236,7 @@ riskScenariosRoutes.put('/:id', async (c) => {
  * DELETE /api/risk-scenarios/:id
  * Delete risk scenario (only custom scenarios can be deleted)
  */
-riskScenariosRoutes.delete('/:id', async (c) => {
+riskScenariosRoutes.delete('/:id', authenticate, authorize('system.configure'), async (c) => {
   try {
     const id = parseInt(c.req.param('id'));
 
@@ -288,7 +297,7 @@ riskScenariosRoutes.delete('/:id', async (c) => {
  * POST /api/risk-scenarios/:id/run
  * Run stress test for a scenario
  */
-riskScenariosRoutes.post('/:id/run', async (c) => {
+riskScenariosRoutes.post('/:id/run', authenticate, async (c) => {
   try {
     const id = parseInt(c.req.param('id'));
 
@@ -333,7 +342,7 @@ riskScenariosRoutes.post('/:id/run', async (c) => {
  * GET /api/risk-scenarios/:id/results
  * Get historical results for a scenario
  */
-riskScenariosRoutes.get('/:id/results', async (c) => {
+riskScenariosRoutes.get('/:id/results', authenticate, async (c) => {
   try {
     const id = parseInt(c.req.param('id'));
     const limit = parseInt(c.req.query('limit') || '10');
@@ -369,7 +378,7 @@ riskScenariosRoutes.get('/:id/results', async (c) => {
  * POST /api/risk-scenarios/run-all
  * Run all active scenarios
  */
-riskScenariosRoutes.post('/run-all', async (c) => {
+riskScenariosRoutes.post('/run-all', authenticate, async (c) => {
   try {
     // Get all active scenarios
     const scenarios = await c.env.DB.prepare(`

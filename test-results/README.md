@@ -22,6 +22,7 @@ This folder contains comprehensive test results for all Trade Nexus API endpoint
 | [POSITION_MARKET_TRANSACTIONS_API_TEST_RESULTS.md](./POSITION_MARKET_TRANSACTIONS_API_TEST_RESULTS.md) | Position & Market Limits, Transactions | ✅ All Working | Fixed Bindings, frontend complete |
 | [PRE_TRADE_API_TEST_RESULTS.md](./PRE_TRADE_API_TEST_RESULTS.md) | Pre-Trade Validation | ✅ All Working | Fixed endpoint naming, frontend complete |
 | [RISK_THRESHOLDS_API_TEST_RESULTS.md](./RISK_THRESHOLDS_API_TEST_RESULTS.md) | Risk Thresholds Management | ✅ All Working | 4 critical bugs fixed, RBAC verified |
+| [RISK_SCENARIOS_API_TEST_RESULTS.md](./RISK_SCENARIOS_API_TEST_RESULTS.md) | Risk Scenarios & Stress Testing | ✅ All Working | 4 critical bugs fixed, system scenario protection |
 
 ---
 
@@ -95,11 +96,21 @@ This folder contains comprehensive test results for all Trade Nexus API endpoint
 - **Update:** Update risk threshold ✅
 - **Delete:** Soft delete risk threshold ✅
 
+### Risk Scenarios APIs (8 endpoints)
+- **List:** Get all risk scenarios ✅
+- **By ID:** Get scenario by ID ✅
+- **Create:** Create new scenario ✅
+- **Update:** Update scenario ✅
+- **Delete:** Soft delete scenario ✅
+- **Run:** Execute stress test for scenario ✅
+- **Results:** Get historical scenario results ✅
+- **Run All:** Execute all active scenarios ✅
+
 ---
 
 ## 🔧 Issues Fixed
 
-### Critical Bugs (17)
+### Critical Bugs (21)
 1. **Users API - user.userId vs user.id mismatch** - Fixed in 11 locations
 2. **Users API - Non-existent database columns** - Removed desk_name, is_primary references
 3. **Users API - Undefined values in SQL** - Added null coalescing operators
@@ -117,6 +128,10 @@ This folder contains comprehensive test results for all Trade Nexus API endpoint
 15. **Risk Thresholds - Non-existent risk.configure permission** - Changed to use system.configure permission
 16. **Risk Thresholds - Bindings type mismatch** - Added CACHE, DOCUMENTS, and all optional bindings
 17. **Risk Thresholds - Authorize middleware property access** - Fixed user.roleId to user.role_id
+18. **Risk Scenarios - No authentication on any endpoint** - Added authenticate middleware to all 8 endpoints
+19. **Risk Scenarios - Missing authorization on write operations** - Added authorize('system.configure') to POST/PUT/DELETE
+20. **Risk Scenarios - Incomplete Bindings type** - Added CACHE, DOCUMENTS, and all optional bindings
+21. **Risk Scenarios - Missing import statement** - Added import for authenticate and authorize middleware
 
 ### Configuration Issues (2)
 1. **SAML - Missing encryption key** - Generated and configured DATABASE_ENCRYPTION_KEY
