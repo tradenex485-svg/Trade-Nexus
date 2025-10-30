@@ -181,30 +181,32 @@ export default function AggregationPage() {
 
   return (
     <AuthGuard>
-      <div className="p-6 space-y-6">
+      <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-white flex items-center gap-3">
-            <GitMerge className="h-8 w-8 text-blue-500" />
+          <h1 className="text-2xl sm:text-3xl font-bold text-white flex items-center gap-2 sm:gap-3">
+            <GitMerge className="h-6 w-6 sm:h-8 sm:w-8 text-blue-500" />
             Position Aggregation
           </h1>
-          <p className="text-slate-400 mt-1">
+          <p className="text-sm sm:text-base text-slate-400 mt-1">
             Cross-commodity position aggregation and economic equivalence
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <Button onClick={() => loadData()} variant="outline" size="sm">
-            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-            Refresh
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+          <Button onClick={() => loadData()} variant="outline" size="sm" className="flex-1 sm:flex-none">
+            <RefreshCw className={`h-4 w-4 sm:mr-2 ${loading ? 'animate-spin' : ''}`} />
+            <span className="hidden sm:inline">Refresh</span>
           </Button>
-          <Button onClick={() => recalculateLimits()} variant="default" size="sm" className="bg-green-600 hover:bg-green-700">
-            <TrendingUp className="h-4 w-4 mr-2" />
-            Recalculate Limits (Fixed)
+          <Button onClick={() => recalculateLimits()} variant="default" size="sm" className="bg-green-600 hover:bg-green-700 flex-1 sm:flex-none">
+            <TrendingUp className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Recalculate Limits</span>
+            <span className="sm:hidden">Limits</span>
           </Button>
-          <Button onClick={() => triggerCalculation()} variant="default" size="sm">
-            <BarChart3 className="h-4 w-4 mr-2" />
-            Calculate Aggregations
+          <Button onClick={() => triggerCalculation()} variant="default" size="sm" className="flex-1 sm:flex-none">
+            <BarChart3 className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Calculate</span>
+            <span className="sm:hidden">Calc</span>
           </Button>
         </div>
       </div>
@@ -217,7 +219,7 @@ export default function AggregationPage() {
       )}
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <Card className="border-slate-700 bg-slate-800/50">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
