@@ -30,6 +30,10 @@ database_id = "0ea5994b-139f-4c0c-a1fd-92759b73df93"
 binding = "CACHE"
 id = "29a143fec9da4e01b23305af8a0187fb"
 
+[[env.dev.kv_namespaces]]
+binding = "SESSIONS"
+id = "ff97580912014941a062d430491539da"
+
 # [[env.dev.r2_buckets]]
 # bucket_name = "trade-nexus-documents-dev"
 # binding = "DOCUMENTS"

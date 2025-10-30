@@ -86,13 +86,18 @@ export const monitoringApi = {
     });
   },
 
-  getComplianceAudit: (params?: { startDate?: string; endDate?: string; exchangeId?: number; commodityCode?: string }) => {
+  getComplianceAudit: (params?: { startDate?: string; endDate?: string; exchangeId?: number; commodityCode?: string; days?: number }) => {
     const queryParams = new URLSearchParams();
     if (params?.startDate) queryParams.append('startDate', params.startDate);
     if (params?.endDate) queryParams.append('endDate', params.endDate);
     if (params?.exchangeId) queryParams.append('exchangeId', params.exchangeId.toString());
     if (params?.commodityCode) queryParams.append('commodityCode', params.commodityCode);
+    if (params?.days) queryParams.append('days', params.days.toString());
     return apiFetch<{ success: boolean; data: any }>(`/api/monitoring/compliance/audit?${queryParams}`);
+  },
+
+  getDataQuality: () => {
+    return apiFetch<{ success: boolean; healthy: boolean; issues_found: number; data: any[] }>('/api/monitoring/data-quality');
   },
 
   getStats: () => {

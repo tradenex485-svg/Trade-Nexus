@@ -28,6 +28,7 @@ import { exchangesRoutes } from './routes/exchanges';
 import { companiesRoutes } from './routes/companies';
 import { tradersRoutes } from './routes/traders';
 import { monitoringRoutes } from './routes/monitoring';
+import { performanceRoutes } from './routes/performance';
 import testEmailsRoutes from './routes/test-emails';
 import regulatoryFilingsRoutes from './routes/regulatory-filings';
 import aggregationRoutes from './routes/aggregation';
@@ -44,8 +45,8 @@ import exceptionsHandlingRoutes from './routes/exceptions-handling';
 import auditTrailRoutes from './routes/audit-trail';
 import preTradeValidationRoutes from './routes/pre-trade-validation';
 import { scheduled } from './scheduled';
-import { performanceMonitoring, getPerformanceStats } from './middleware/performance';
-import { rateLimiter, RateLimitPresets, getRateLimitStats } from './middleware/rate-limiter';
+import { performanceMonitoring } from './middleware/performance';
+import { rateLimiter, RateLimitPresets } from './middleware/rate-limiter';
 import { companyScopingContext } from './middleware/company-scoping';
 import { optionalAuth } from './middleware/auth';
 import { securityHeaders } from './middleware/security-headers';
@@ -158,19 +159,6 @@ app.get('/health', async (c) => {
   }
 });
 
-// Performance monitoring endpoints
-app.get('/api/performance/stats', async (c) => {
-  const hours = parseInt(c.req.query('hours') || '24');
-  const stats = await getPerformanceStats(c.env.DB, hours);
-  return c.json(stats);
-});
-
-app.get('/api/performance/rate-limits', async (c) => {
-  const hours = parseInt(c.req.query('hours') || '24');
-  const stats = await getRateLimitStats(c.env.DB, hours);
-  return c.json(stats);
-});
-
 // API Routes
 app.route('/api/auth', authRoutes);
 app.route('/api/auth/saml', samlRoutes);
@@ -199,6 +187,7 @@ app.route('/api/risk-scenarios', riskScenariosRoutes);
 app.route('/api/risk-metrics', riskMetricsRoutes);
 app.route('/api/data-quality', dataQualityRoutes);
 app.route('/api/monitoring', monitoringRoutes);
+app.route('/api/performance', performanceRoutes);
 app.route('/api/test-emails', testEmailsRoutes); // FOR TESTING ONLY
 app.route('/api/regulatory-filings', regulatoryFilingsRoutes);
 app.route('/api/aggregation', aggregationRoutes);

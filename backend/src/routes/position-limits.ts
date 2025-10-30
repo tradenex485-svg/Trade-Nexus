@@ -2,6 +2,9 @@ import { Hono } from 'hono';
 
 type Bindings = {
   DB: D1Database;
+  SESSIONS: KVNamespace;
+  JWT_SECRET: string;
+  NODE_ENV: string;
 };
 
 export const positionLimitsRoutes = new Hono<{ Bindings: Bindings }>();

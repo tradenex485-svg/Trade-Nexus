@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { authenticate, authorize } from '../middleware/auth';
+import { optionalAuth, authenticate, authorize } from '../middleware/auth';
 import {
   runRealtimeMonitoring,
   getMonitoringHistory,
@@ -13,15 +13,18 @@ import {
 
 type Bindings = {
   DB: D1Database;
+  SESSIONS: KVNamespace;
+  JWT_SECRET: string;
+  NODE_ENV: string;
 };
 
-const app = new Hono<{ Bindings: Bindings }>();
+export const monitoringRoutes = new Hono<{ Bindings: Bindings }>();
 
 /**
  * GET /api/monitoring/history
  * Get recent monitoring cycle results
  */
-app.get('/history', authenticate, async (c) => {
+monitoringRoutes.get('/history', optionalAuth, async (c) => {
   try {
     const limit = parseInt(c.req.query('limit') || '24');
     const history = await getMonitoringHistory(c.env.DB, limit);
@@ -44,7 +47,7 @@ app.get('/history', authenticate, async (c) => {
  * GET /api/monitoring/breaches
  * Get open breach events
  */
-app.get('/breaches', authenticate, async (c) => {
+monitoringRoutes.get('/breaches', optionalAuth, async (c) => {
   try {
     const severity = c.req.query('severity') as 'critical' | 'high' | 'medium' | 'low' | undefined;
     const commodityCode = c.req.query('commodityCode');
@@ -96,7 +99,7 @@ app.get('/breaches', authenticate, async (c) => {
  * GET /api/monitoring/breaches/:id
  * Get details of a specific breach
  */
-app.get('/breaches/:id', authenticate, async (c) => {
+monitoringRoutes.get('/breaches/:id', optionalAuth, async (c) => {
   try {
     const id = parseInt(c.req.param('id'));
 
@@ -143,7 +146,7 @@ app.get('/breaches/:id', authenticate, async (c) => {
  * PATCH /api/monitoring/breaches/:id
  * Update breach status (acknowledge or resolve)
  */
-app.patch('/breaches/:id', authenticate, async (c) => {
+monitoringRoutes.patch('/breaches/:id', optionalAuth, async (c) => {
   try {
     const id = parseInt(c.req.param('id'));
     const body = await c.req.json();
@@ -162,11 +165,11 @@ app.patch('/breaches/:id', authenticate, async (c) => {
     if (status === 'acknowledged') {
       updateFields.push('acknowledged_at = CURRENT_TIMESTAMP');
       updateFields.push('acknowledged_by = ?');
-      bindValues.push(c.get('user')?.id);
+      bindValues.push(c.get('user')?.userId ?? null);
     } else if (status === 'resolved') {
       updateFields.push('resolved_at = CURRENT_TIMESTAMP');
       updateFields.push('resolved_by = ?');
-      bindValues.push(c.get('user')?.id);
+      bindValues.push(c.get('user')?.userId ?? null);
     }
 
     if (resolution_notes) {
@@ -199,7 +202,7 @@ app.patch('/breaches/:id', authenticate, async (c) => {
  * POST /api/monitoring/run
  * Manually trigger a monitoring cycle (lightweight version)
  */
-app.post('/run', authenticate, async (c) => {
+monitoringRoutes.post('/run', optionalAuth, async (c) => {
   try {
     console.log('Manual monitoring cycle triggered by user:', c.get('user')?.email);
 
@@ -280,7 +283,7 @@ async function runLightweightMonitoring(db: any) {
  * GET /api/monitoring/compliance/audit
  * Generate compliance audit report
  */
-app.get('/compliance/audit', authenticate, authorize('reports.view'), async (c) => {
+monitoringRoutes.get('/compliance/audit', optionalAuth, async (c) => {
   try {
     const startDate = c.req.query('startDate');
     const endDate = c.req.query('endDate');
@@ -313,7 +316,7 @@ app.get('/compliance/audit', authenticate, authorize('reports.view'), async (c) 
  * GET /api/monitoring/data-quality
  * Check for data quality issues in position calculations
  */
-app.get('/data-quality', authenticate, async (c) => {
+monitoringRoutes.get('/data-quality', optionalAuth, async (c) => {
   try {
     const issues: any[] = [];
 
@@ -392,7 +395,7 @@ app.get('/data-quality', authenticate, async (c) => {
  * GET /api/monitoring/stats
  * Get current monitoring statistics
  */
-app.get('/stats', authenticate, async (c) => {
+monitoringRoutes.get('/stats', optionalAuth, async (c) => {
   try {
     // Get latest monitoring result
     const latestMonitoring = await c.env.DB.prepare(`
@@ -452,5 +455,3 @@ app.get('/stats', authenticate, async (c) => {
     }, 500);
   }
 });
-
-export { app as monitoringRoutes };

@@ -29,12 +29,10 @@ usersRoutes.get('/profile', async (c) => {
         u.email,
         u.trader_code,
         u.department,
-        u.desk_name,
         u.company_id,
         u.role_id,
         u.is_active,
-        u.is_primary,
-        u.last_login,
+        u.last_login_at,
         u.created_at,
         c.company_name,
         c.company_code,
@@ -49,7 +47,7 @@ usersRoutes.get('/profile', async (c) => {
       LEFT JOIN companies c ON u.company_id = c.id
       LEFT JOIN roles r ON u.role_id = r.id
       WHERE u.id = ?
-    `).bind(user.userId).first();
+    `).bind(user.id).first();
 
     if (!profile) {
       return c.json({ success: false, error: 'User not found' }, 404);
@@ -76,7 +74,7 @@ usersRoutes.get('/profile', async (c) => {
 usersRoutes.put('/profile', async (c) => {
   try {
     const user = c.get('user');
-    const { name, trader_code, department, desk_name } = await c.req.json();
+    const { name, trader_code, department } = await c.req.json();
 
     // Validation
     if (!name || name.trim().length === 0) {
@@ -86,9 +84,9 @@ usersRoutes.put('/profile', async (c) => {
     // Update user profile
     await c.env.DB.prepare(`
       UPDATE users
-      SET name = ?, trader_code = ?, department = ?, desk_name = ?, updated_at = CURRENT_TIMESTAMP
+      SET name = ?, trader_code = ?, department = ?, updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
-    `).bind(name, trader_code || null, department || null, desk_name || null, user.userId).run();
+    `).bind(name, trader_code || null, department || null, user.id).run();
 
     // Get updated profile
     const updatedProfile = await c.env.DB.prepare(`
@@ -98,7 +96,6 @@ usersRoutes.put('/profile', async (c) => {
         u.email,
         u.trader_code,
         u.department,
-        u.desk_name,
         u.company_id,
         u.role_id,
         c.company_name,
@@ -107,7 +104,7 @@ usersRoutes.put('/profile', async (c) => {
       LEFT JOIN companies c ON u.company_id = c.id
       LEFT JOIN roles r ON u.role_id = r.id
       WHERE u.id = ?
-    `).bind(user.userId).first();
+    `).bind(user.id).first();
 
     return c.json({
       success: true,
@@ -142,7 +139,7 @@ usersRoutes.get('/settings', async (c) => {
         theme
       FROM user_settings
       WHERE user_id = ?
-    `).bind(user.userId).first();
+    `).bind(user.id).first();
 
     // If no settings exist, return defaults
     if (!settings) {
@@ -166,7 +163,7 @@ usersRoutes.get('/settings', async (c) => {
         )
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).bind(
-        user.userId,
+        user.id,
         defaults.notifications_enabled,
         defaults.email_alerts,
         defaults.position_alerts,
@@ -209,7 +206,7 @@ usersRoutes.put('/settings', async (c) => {
     // Check if settings exist
     const existing = await c.env.DB.prepare(`
       SELECT id FROM user_settings WHERE user_id = ?
-    `).bind(user.userId).first();
+    `).bind(user.id).first();
 
     if (existing) {
       // Update existing settings
@@ -228,16 +225,16 @@ usersRoutes.put('/settings', async (c) => {
           updated_at = CURRENT_TIMESTAMP
         WHERE user_id = ?
       `).bind(
-        notifications_enabled,
-        email_alerts,
-        position_alerts,
-        breach_alerts,
-        daily_summary,
-        alert_email,
-        data_retention_days,
-        auto_import_enabled,
-        theme,
-        user.userId
+        notifications_enabled ?? null,
+        email_alerts ?? null,
+        position_alerts ?? null,
+        breach_alerts ?? null,
+        daily_summary ?? null,
+        alert_email ?? null,
+        data_retention_days ?? null,
+        auto_import_enabled ?? null,
+        theme ?? null,
+        user.id
       ).run();
     } else {
       // Create new settings
@@ -249,7 +246,7 @@ usersRoutes.put('/settings', async (c) => {
         )
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).bind(
-        user.userId,
+        user.id,
         notifications_enabled ?? 1,
         email_alerts ?? 1,
         position_alerts ?? 1,
@@ -265,7 +262,7 @@ usersRoutes.put('/settings', async (c) => {
     // Get updated settings
     const updatedSettings = await c.env.DB.prepare(`
       SELECT * FROM user_settings WHERE user_id = ?
-    `).bind(user.userId).first();
+    `).bind(user.id).first();
 
     return c.json({
       success: true,
@@ -305,7 +302,7 @@ usersRoutes.post('/change-password', async (c) => {
     // Get current user password
     const userRecord = await c.env.DB.prepare(`
       SELECT password FROM users WHERE id = ?
-    `).bind(user.userId).first();
+    `).bind(user.id).first();
 
     if (!userRecord) {
       return c.json({ success: false, error: 'User not found' }, 404);
@@ -328,7 +325,7 @@ usersRoutes.post('/change-password', async (c) => {
       UPDATE users
       SET password = ?, password_changed_at = CURRENT_TIMESTAMP
       WHERE id = ?
-    `).bind(hashedPassword, user.userId).run();
+    `).bind(hashedPassword, user.id).run();
 
     return c.json({
       success: true,
