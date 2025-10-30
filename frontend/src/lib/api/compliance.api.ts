@@ -63,8 +63,33 @@ export const filingsApi = {
     return apiFetch<{ success: boolean; data: any[] }>(`/api/regulatory-filings?${queryParams}`);
   },
 
+  getById: (filingId: number) => {
+    return apiFetch<{ success: boolean; data: any }>(`/api/regulatory-filings/${filingId}`);
+  },
+
   getStats: () => {
     return apiFetch<{ success: boolean; data: any }>('/api/regulatory-filings/stats/summary');
+  },
+
+  generateCFTCLTRS: (data: { report_date: string }) => {
+    return apiFetch<{ success: boolean; message: string; data: any; file_preview?: string }>('/api/regulatory-filings/generate/cftc-ltrs', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  generateICEDaily: (data: { report_date: string; exchange_id: number }) => {
+    return apiFetch<{ success: boolean; message: string; data: any; file_preview?: string }>('/api/regulatory-filings/generate/ice-daily', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  generateCME: (data: { report_date: string; exchange_id: number }) => {
+    return apiFetch<{ success: boolean; message: string; data: any; file_preview?: string }>('/api/regulatory-filings/generate/cme', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
   },
 
   download: async (filingId: number) => {

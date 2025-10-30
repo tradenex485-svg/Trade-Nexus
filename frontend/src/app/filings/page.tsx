@@ -20,6 +20,8 @@ import {
   FileCheck,
   Building2,
   Loader2,
+  Plus,
+  X,
 } from 'lucide-react';
 
 interface Filing {
@@ -61,6 +63,13 @@ export default function FilingsPage() {
   const [filterType, setFilterType] = useState<string>('all');
   const [filterBody, setFilterBody] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [showGenerateModal, setShowGenerateModal] = useState(false);
+  const [generating, setGenerating] = useState(false);
+  const [generateForm, setGenerateForm] = useState({
+    filing_type: 'cftc_ltrs',
+    report_date: new Date().toISOString().split('T')[0],
+    exchange_id: 1,
+  });
 
   useEffect(() => {
     if (!_hasHydrated || !token) {
@@ -143,6 +152,45 @@ export default function FilingsPage() {
     }
   }
 
+  async function handleGenerateFiling() {
+    if (!token) return;
+
+    setGenerating(true);
+    setError(null);
+
+    try {
+      let response;
+
+      if (generateForm.filing_type === 'cftc_ltrs') {
+        response = await filingsApi.generateCFTCLTRS({
+          report_date: generateForm.report_date,
+        });
+      } else if (generateForm.filing_type === 'ice_daily_position') {
+        response = await filingsApi.generateICEDaily({
+          report_date: generateForm.report_date,
+          exchange_id: generateForm.exchange_id,
+        });
+      } else if (generateForm.filing_type === 'cme_position_report') {
+        response = await filingsApi.generateCME({
+          report_date: generateForm.report_date,
+          exchange_id: generateForm.exchange_id,
+        });
+      }
+
+      if (response?.success) {
+        alert(response.message || 'Filing generated successfully');
+        setShowGenerateModal(false);
+        loadData();
+      } else {
+        alert('Failed to generate filing');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to generate filing');
+    } finally {
+      setGenerating(false);
+    }
+  }
+
   function getStatusIcon(status: string) {
     switch (status) {
       case 'accepted':
@@ -205,18 +253,25 @@ export default function FilingsPage() {
 
   return (
     <AuthGuard>
-      <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="p-4 md:p-6 space-y-4 md:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-white">Regulatory Filings</h1>
-          <p className="text-slate-400 mt-1">
+          <h1 className="text-2xl md:text-3xl font-bold text-white">Regulatory Filings</h1>
+          <p className="text-slate-400 mt-1 text-sm md:text-base">
             Automated regulatory submissions and compliance reporting
           </p>
         </div>
-        <Button onClick={() => loadData()} variant="outline" size="sm">
-          <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-          Refresh
-        </Button>
+        <div className="flex gap-2 flex-wrap sm:flex-nowrap">
+          <Button onClick={() => setShowGenerateModal(true)} className="bg-blue-600 hover:bg-blue-700 text-white flex-1 sm:flex-none">
+            <Plus className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Generate Filing</span>
+            <span className="sm:hidden">Generate</span>
+          </Button>
+          <Button onClick={() => loadData()} variant="outline" size="sm">
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''} sm:mr-2`} />
+            <span className="hidden sm:inline">Refresh</span>
+          </Button>
+        </div>
       </div>
 
       {error && (
@@ -227,7 +282,7 @@ export default function FilingsPage() {
       )}
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {stats.map((stat) => (
           <Card key={`${stat.filing_type}-${stat.regulatory_body}`} className="border-slate-700 bg-slate-800/50">
             <CardHeader className="pb-3">
@@ -276,7 +331,7 @@ export default function FilingsPage() {
           <CardTitle className="text-white">Filters</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <div>
               <label className="text-sm text-slate-400 mb-2 block">Filing Type</label>
               <select
@@ -332,56 +387,61 @@ export default function FilingsPage() {
           <CardDescription>Last 50 regulatory submissions</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full">
+          <div className="overflow-x-auto -mx-2 sm:mx-0">
+            <table className="w-full min-w-[640px]">
               <thead>
                 <tr className="border-b border-slate-700">
-                  <th className="text-left py-3 px-4 text-slate-400 font-medium">Type</th>
-                  <th className="text-left py-3 px-4 text-slate-400 font-medium">Regulatory Body</th>
-                  <th className="text-left py-3 px-4 text-slate-400 font-medium">Report Date</th>
-                  <th className="text-left py-3 px-4 text-slate-400 font-medium">Status</th>
-                  <th className="text-left py-3 px-4 text-slate-400 font-medium">Positions</th>
-                  <th className="text-left py-3 px-4 text-slate-400 font-medium">Generated</th>
-                  <th className="text-right py-3 px-4 text-slate-400 font-medium">Actions</th>
+                  <th className="text-left py-3 px-2 sm:px-4 text-slate-400 font-medium text-xs sm:text-sm">Type</th>
+                  <th className="text-left py-3 px-2 sm:px-4 text-slate-400 font-medium text-xs sm:text-sm hidden md:table-cell">Regulatory Body</th>
+                  <th className="text-left py-3 px-2 sm:px-4 text-slate-400 font-medium text-xs sm:text-sm">Report Date</th>
+                  <th className="text-left py-3 px-2 sm:px-4 text-slate-400 font-medium text-xs sm:text-sm">Status</th>
+                  <th className="text-left py-3 px-2 sm:px-4 text-slate-400 font-medium text-xs sm:text-sm hidden lg:table-cell">Positions</th>
+                  <th className="text-left py-3 px-2 sm:px-4 text-slate-400 font-medium text-xs sm:text-sm hidden xl:table-cell">Generated</th>
+                  <th className="text-right py-3 px-2 sm:px-4 text-slate-400 font-medium text-xs sm:text-sm">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filings.map((filing) => (
                   <tr key={filing.id} className="border-b border-slate-700/50 hover:bg-slate-700/20">
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-2">
-                        {getStatusIcon(filing.status)}
-                        <span className="text-white font-medium">
-                          {formatFilingType(filing.filing_type)}
-                        </span>
+                    <td className="py-3 px-2 sm:px-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                        <div className="flex items-center gap-2">
+                          {getStatusIcon(filing.status)}
+                          <span className="text-white font-medium text-xs sm:text-sm">
+                            {formatFilingType(filing.filing_type)}
+                          </span>
+                        </div>
+                        <Badge variant="outline" className="bg-blue-500/10 text-blue-400 border-blue-500/20 md:hidden text-xs w-fit">
+                          {filing.regulatory_body}
+                        </Badge>
                       </div>
                     </td>
-                    <td className="py-3 px-4">
-                      <Badge variant="outline" className="bg-blue-500/10 text-blue-400 border-blue-500/20">
+                    <td className="py-3 px-2 sm:px-4 hidden md:table-cell">
+                      <Badge variant="outline" className="bg-blue-500/10 text-blue-400 border-blue-500/20 text-xs">
                         {filing.regulatory_body}
                       </Badge>
                     </td>
-                    <td className="py-3 px-4 text-white">
+                    <td className="py-3 px-2 sm:px-4 text-white text-xs sm:text-sm">
                       {new Date(filing.report_date).toLocaleDateString()}
                     </td>
-                    <td className="py-3 px-4">{getStatusBadge(filing.status)}</td>
-                    <td className="py-3 px-4 text-slate-300">{filing.line_item_count}</td>
-                    <td className="py-3 px-4 text-slate-400 text-sm">
+                    <td className="py-3 px-2 sm:px-4">{getStatusBadge(filing.status)}</td>
+                    <td className="py-3 px-2 sm:px-4 text-slate-300 text-xs sm:text-sm hidden lg:table-cell">{filing.line_item_count}</td>
+                    <td className="py-3 px-2 sm:px-4 text-slate-400 text-xs hidden xl:table-cell">
                       {filing.generated_at
                         ? new Date(filing.generated_at).toLocaleString()
                         : '-'}
                     </td>
-                    <td className="py-3 px-4">
-                      <div className="flex items-center justify-end gap-2">
+                    <td className="py-3 px-2 sm:px-4">
+                      <div className="flex items-center justify-end gap-1 sm:gap-2 flex-wrap sm:flex-nowrap">
                         {filing.status === 'generated' && (
                           <Button
                             size="sm"
                             variant="outline"
                             onClick={() => handleSubmit(filing.id)}
-                            className="text-blue-400 border-blue-500/30 hover:bg-blue-500/10"
+                            className="text-blue-400 border-blue-500/30 hover:bg-blue-500/10 text-xs"
                           >
-                            <Send className="h-3 w-3 mr-1" />
-                            Submit
+                            <Send className="h-3 w-3 sm:mr-1" />
+                            <span className="hidden sm:inline">Submit</span>
                           </Button>
                         )}
                         {(filing.status === 'generated' || filing.status === 'submitted' || filing.status === 'accepted') && (
@@ -389,10 +449,10 @@ export default function FilingsPage() {
                             size="sm"
                             variant="outline"
                             onClick={() => handleDownload(filing.id, filing.filing_type, filing.report_date)}
-                            className="text-green-400 border-green-500/30 hover:bg-green-500/10"
+                            className="text-green-400 border-green-500/30 hover:bg-green-500/10 text-xs"
                           >
-                            <Download className="h-3 w-3 mr-1" />
-                            Download
+                            <Download className="h-3 w-3 sm:mr-1" />
+                            <span className="hidden sm:inline">Download</span>
                           </Button>
                         )}
                       </div>
@@ -411,6 +471,92 @@ export default function FilingsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Generate Filing Modal */}
+      {showGenerateModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-md border-slate-700 bg-slate-800 max-h-[90vh] overflow-y-auto">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-white text-lg md:text-xl">Generate New Filing</CardTitle>
+                <button
+                  onClick={() => setShowGenerateModal(false)}
+                  className="text-slate-400 hover:text-white flex-shrink-0"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              <CardDescription className="text-sm">Create a new regulatory filing report</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <label className="text-sm text-slate-400 mb-2 block">Filing Type</label>
+                <select
+                  value={generateForm.filing_type}
+                  onChange={(e) => setGenerateForm({ ...generateForm, filing_type: e.target.value })}
+                  className="w-full bg-slate-700/50 border border-slate-600 text-white rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="cftc_ltrs">CFTC LTRS</option>
+                  <option value="ice_daily_position">ICE Daily Position</option>
+                  <option value="cme_position_report">CME Position Report</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-sm text-slate-400 mb-2 block">Report Date</label>
+                <input
+                  type="date"
+                  value={generateForm.report_date}
+                  onChange={(e) => setGenerateForm({ ...generateForm, report_date: e.target.value })}
+                  className="w-full bg-slate-700/50 border border-slate-600 text-white rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              {(generateForm.filing_type === 'ice_daily_position' || generateForm.filing_type === 'cme_position_report') && (
+                <div>
+                  <label className="text-sm text-slate-400 mb-2 block">Exchange</label>
+                  <select
+                    value={generateForm.exchange_id}
+                    onChange={(e) => setGenerateForm({ ...generateForm, exchange_id: parseInt(e.target.value) })}
+                    className="w-full bg-slate-700/50 border border-slate-600 text-white rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="1">ICE</option>
+                    <option value="2">CME</option>
+                    <option value="3">NYMEX</option>
+                  </select>
+                </div>
+              )}
+
+              <div className="flex gap-2 pt-4">
+                <Button
+                  onClick={handleGenerateFiling}
+                  disabled={generating}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  {generating ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <FileCheck className="h-4 w-4 mr-2" />
+                      Generate
+                    </>
+                  )}
+                </Button>
+                <Button
+                  onClick={() => setShowGenerateModal(false)}
+                  variant="outline"
+                  disabled={generating}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
     </AuthGuard>
   );

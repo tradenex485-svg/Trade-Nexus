@@ -524,7 +524,7 @@ export async function getFilingHistory(
     params.push(filters.status);
   }
 
-  query += ` ORDER BY report_date DESC, created_at DESC LIMIT ?`;
+  query += ` ORDER BY report_date DESC LIMIT ?`;
   params.push(filters.limit || 50);
 
   const result = await db.prepare(query).bind(...params).all();
