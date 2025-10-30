@@ -373,7 +373,7 @@ forgotPasswordRoute.post('/forgot-password', async (c) => {
 
     // Store reset token
     await c.env.DB.prepare(`
-      INSERT INTO password_resets (user_id, reset_code, expires_at)
+      INSERT INTO password_resets (user_id, reset_token, expires_at)
       VALUES (?, ?, ?)
     `).bind(user.id, resetCode, expiresAt).run();
 
@@ -427,7 +427,7 @@ forgotPasswordRoute.post('/reset-password', async (c) => {
       FROM password_resets pr
       JOIN users u ON pr.user_id = u.id
       WHERE u.email = ?
-        AND pr.reset_code = ?
+        AND pr.reset_token = ?
         AND pr.expires_at > datetime('now')
         AND pr.used_at IS NULL
       ORDER BY pr.created_at DESC

@@ -175,7 +175,7 @@ app.get('/api/performance/rate-limits', async (c) => {
 app.route('/api/auth', authRoutes);
 app.route('/api/auth/saml', samlRoutes);
 app.route('/api/auth/oauth', oauthRoutes);
-app.route('/api/auth', forgotPasswordRoute);
+app.route('/api/users', forgotPasswordRoute);  // Fixed: Mount at /api/users to avoid conflict with authRoutes
 app.route('/api/users', usersRoutes);
 app.route('/api/dashboard', dashboardRoutes);
 app.route('/api/exchanges', exchangesRoutes);
