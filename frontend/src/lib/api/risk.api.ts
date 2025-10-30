@@ -28,16 +28,29 @@ export const preTradeApi = {
     });
   },
 
+  getHistory: (params?: { status?: string; start_date?: string; limit?: number }) => {
+    const queryParams = new URLSearchParams();
+    if (params?.status) queryParams.append('status', params.status);
+    if (params?.start_date) queryParams.append('start_date', params.start_date);
+    if (params?.limit) queryParams.append('limit', params.limit.toString());
+    return apiFetch<{ success: boolean; data: any[]; count: number }>(`/api/pre-trade/history?${queryParams}`);
+  },
+
+  getHistoryById: (id: number) => {
+    return apiFetch<{ success: boolean; check: any }>(`/api/pre-trade/history/${id}`);
+  },
+
+  // Legacy method names for backward compatibility
   getChecks: (params?: { status?: string; start_date?: string; limit?: number }) => {
     const queryParams = new URLSearchParams();
     if (params?.status) queryParams.append('status', params.status);
     if (params?.start_date) queryParams.append('start_date', params.start_date);
     if (params?.limit) queryParams.append('limit', params.limit.toString());
-    return apiFetch<{ success: boolean; data: any[]; count: number }>(`/api/pre-trade/checks?${queryParams}`);
+    return apiFetch<{ success: boolean; data: any[]; count: number }>(`/api/pre-trade/history?${queryParams}`);
   },
 
   getCheck: (id: number) => {
-    return apiFetch<{ success: boolean; check: any }>(`/api/pre-trade/checks/${id}`);
+    return apiFetch<{ success: boolean; check: any }>(`/api/pre-trade/history/${id}`);
   },
 
   getStats: (days: number = 7) => {

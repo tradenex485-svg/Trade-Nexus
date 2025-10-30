@@ -130,10 +130,10 @@ preTradeRoutes.post('/batch-validate', optionalAuth, async (c) => {
 });
 
 /**
- * GET /api/pre-trade/checks
+ * GET /api/pre-trade/history
  * Get validation check history
  */
-preTradeRoutes.get('/checks', optionalAuth, async (c) => {
+preTradeRoutes.get('/history', optionalAuth, async (c) => {
   try {
     const user = c.get('user') as TokenPayload | undefined;
     const status = c.req.query('status');
@@ -166,10 +166,10 @@ preTradeRoutes.get('/checks', optionalAuth, async (c) => {
 });
 
 /**
- * GET /api/pre-trade/checks/:id
+ * GET /api/pre-trade/history/:id
  * Get specific validation check details
  */
-preTradeRoutes.get('/checks/:id', optionalAuth, async (c) => {
+preTradeRoutes.get('/history/:id', optionalAuth, async (c) => {
   try {
     const id = parseInt(c.req.param('id'));
     const user = c.get('user') as TokenPayload | undefined;

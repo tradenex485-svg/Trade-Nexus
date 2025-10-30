@@ -19,7 +19,8 @@ This folder contains comprehensive test results for all Trade Nexus API endpoint
 | [DASHBOARD_API_TEST_RESULTS.md](./DASHBOARD_API_TEST_RESULTS.md) | Dashboard & Monitoring | ✅ All Working | Real-time data verified |
 | [MONITORING_API_TEST_RESULTS.md](./MONITORING_API_TEST_RESULTS.md) | Regulatory Monitoring & Compliance | ✅ All Working | 5 critical bugs fixed |
 | [PERFORMANCE_API_TEST_RESULTS.md](./PERFORMANCE_API_TEST_RESULTS.md) | System Performance & Rate Limiting | ✅ All Working | Refactored routing pattern, added RBAC |
-| [POSITION_MARKET_TRANSACTIONS_API_TEST_RESULTS.md](./POSITION_MARKET_TRANSACTIONS_API_TEST_RESULTS.md) | Position & Market Limits, Transactions | ✅ All Working | Fixed Bindings, frontend incomplete |
+| [POSITION_MARKET_TRANSACTIONS_API_TEST_RESULTS.md](./POSITION_MARKET_TRANSACTIONS_API_TEST_RESULTS.md) | Position & Market Limits, Transactions | ✅ All Working | Fixed Bindings, frontend complete |
+| [PRE_TRADE_API_TEST_RESULTS.md](./PRE_TRADE_API_TEST_RESULTS.md) | Pre-Trade Validation | ✅ All Working | Fixed endpoint naming, frontend complete |
 
 ---
 
@@ -79,6 +80,12 @@ This folder contains comprehensive test results for all Trade Nexus API endpoint
 - **By ID:** Get transaction by ID ✅
 - **Create:** Create new transaction ✅
 - **Delete:** Delete transaction ✅
+
+### Pre-Trade Validation APIs (4 endpoints)
+- **Validate:** Validate single trade ✅
+- **Batch Validate:** Validate multiple trades ✅
+- **History:** Get validation history ✅
+- **Stats:** Get validation statistics ✅
 
 ---
 
