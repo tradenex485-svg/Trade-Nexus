@@ -84,6 +84,12 @@ export default function RiskManagementPage() {
   const [trendsLoading, setTrendsLoading] = useState(false);
   const [varHistory, setVarHistory] = useState<any[]>([]);
 
+  // Risk Decomposition state
+  const [riskDecomposition, setRiskDecomposition] = useState<any[]>([]);
+
+  // Correlations state
+  const [correlations, setCorrelations] = useState<any[]>([]);
+
   useEffect(() => {
     // Wait for token before loading data
     if (!token) return;
@@ -119,8 +125,14 @@ export default function RiskManagementPage() {
   const loadPortfolioRisk = async () => {
     setRiskLoading(true);
     try {
-      const response = await riskMetricsApi.getDashboard();
-      setPortfolioRisk(response.dashboard);
+      const [dashboardResponse, decompositionResponse, correlationsResponse] = await Promise.all([
+        riskMetricsApi.getDashboard(),
+        riskMetricsApi.getRiskDecomposition(),
+        riskMetricsApi.getCorrelations(30),
+      ]);
+      setPortfolioRisk(dashboardResponse.dashboard);
+      setRiskDecomposition(decompositionResponse.decomposition || []);
+      setCorrelations(correlationsResponse.correlations || []);
     } catch (error) {
       console.error('Failed to load portfolio risk:', error);
     } finally {
@@ -890,7 +902,7 @@ export default function RiskManagementPage() {
                           {portfolioRisk.concentration_breakdown?.by_commodity?.slice(0, 10).map((item: any, index: number) => (
                             <div key={index} className="flex items-center justify-between p-2 bg-slate-900/50 rounded">
                               <span className="text-slate-300">{item.commodity}</span>
-                              <span className="text-white font-semibold">{item.concentration_pct?.toFixed(2)}%</span>
+                              <span className="text-white font-semibold">{item.percentage?.toFixed(2)}%</span>
                             </div>
                           )) || (
                             <p className="text-slate-400 text-center py-4">No data available</p>
@@ -898,6 +910,133 @@ export default function RiskManagementPage() {
                         </div>
                       </CardContent>
                     </Card>
+
+                    {/* Risk Decomposition */}
+                    {riskDecomposition.length > 0 && (
+                      <Card className="border-slate-700 bg-slate-800/50 backdrop-blur">
+                        <CardHeader>
+                          <CardTitle className="text-white">Risk Decomposition by Commodity</CardTitle>
+                          <CardDescription className="text-slate-400">
+                            Risk contribution and utilization metrics
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                              <thead>
+                                <tr className="border-b border-slate-700">
+                                  <th className="text-left text-slate-400 py-3 px-2">Commodity</th>
+                                  <th className="text-right text-slate-400 py-3 px-2">Exposure</th>
+                                  <th className="text-right text-slate-400 py-3 px-2">Risk %</th>
+                                  <th className="text-right text-slate-400 py-3 px-2">Avg Util</th>
+                                  <th className="text-right text-slate-400 py-3 px-2">Max Util</th>
+                                  <th className="text-right text-slate-400 py-3 px-2">High Risk</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {riskDecomposition.map((item: any, index: number) => (
+                                  <tr key={index} className="border-b border-slate-800 hover:bg-slate-900/50">
+                                    <td className="py-3 px-2 text-white font-medium">{item.commodity}</td>
+                                    <td className="py-3 px-2 text-right text-slate-300">
+                                      {item.total_exposure?.toLocaleString()}
+                                    </td>
+                                    <td className="py-3 px-2 text-right">
+                                      <span className="text-blue-400 font-semibold">
+                                        {item.risk_contribution_pct?.toFixed(2)}%
+                                      </span>
+                                    </td>
+                                    <td className="py-3 px-2 text-right">
+                                      <span className={cn(
+                                        "font-semibold",
+                                        item.avg_utilization >= 90 ? "text-red-400" :
+                                        item.avg_utilization >= 75 ? "text-yellow-400" :
+                                        "text-green-400"
+                                      )}>
+                                        {item.avg_utilization?.toFixed(1)}%
+                                      </span>
+                                    </td>
+                                    <td className="py-3 px-2 text-right">
+                                      <span className={cn(
+                                        "font-semibold",
+                                        item.max_utilization >= 100 ? "text-red-400" :
+                                        item.max_utilization >= 90 ? "text-yellow-400" :
+                                        "text-green-400"
+                                      )}>
+                                        {item.max_utilization?.toFixed(1)}%
+                                      </span>
+                                    </td>
+                                    <td className="py-3 px-2 text-right">
+                                      {item.high_risk_positions > 0 ? (
+                                        <Badge variant="outline" className="text-red-400 border-red-500">
+                                          {item.high_risk_positions}
+                                        </Badge>
+                                      ) : (
+                                        <span className="text-slate-500">0</span>
+                                      )}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {/* Correlations Matrix */}
+                    {correlations.length > 0 && (
+                      <Card className="border-slate-700 bg-slate-800/50 backdrop-blur">
+                        <CardHeader>
+                          <CardTitle className="text-white">Commodity Correlations</CardTitle>
+                          <CardDescription className="text-slate-400">
+                            Correlation matrix for commodity pairs (30-day lookback)
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                            {correlations.map((corr: any, index: number) => {
+                              const corrValue = corr.correlation;
+                              const getCorrelationColor = (val: number) => {
+                                if (val > 0.7) return 'text-green-400 border-green-500';
+                                if (val > 0.3) return 'text-blue-400 border-blue-500';
+                                if (val > -0.3) return 'text-slate-400 border-slate-500';
+                                if (val > -0.7) return 'text-orange-400 border-orange-500';
+                                return 'text-red-400 border-red-500';
+                              };
+
+                              return (
+                                <div key={index} className="p-3 bg-slate-900/50 rounded-lg">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <span className="text-sm text-slate-300">
+                                      {corr.commodity_1} × {corr.commodity_2}
+                                    </span>
+                                    <Badge
+                                      variant="outline"
+                                      className={getCorrelationColor(corrValue)}
+                                    >
+                                      {corrValue?.toFixed(3)}
+                                    </Badge>
+                                  </div>
+                                  <div className="w-full bg-slate-800 rounded-full h-2">
+                                    <div
+                                      className={cn(
+                                        "h-2 rounded-full transition-all",
+                                        corrValue > 0.7 ? 'bg-green-500' :
+                                        corrValue > 0.3 ? 'bg-blue-500' :
+                                        corrValue > -0.3 ? 'bg-slate-500' :
+                                        corrValue > -0.7 ? 'bg-orange-500' :
+                                        'bg-red-500'
+                                      )}
+                                      style={{ width: `${Math.abs(corrValue) * 100}%` }}
+                                    />
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
                   </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center p-12">
