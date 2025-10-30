@@ -196,10 +196,10 @@ export default function PendingExemptionsPage() {
     if (exemption.status !== 'pending') return false;
 
     // Super admin can delete any pending request
-    if (user?.role_id === 5) return true;
+    if (user?.role_name === 'super_admin') return true;
 
     // Users can delete their own pending requests
-    return exemption.user_id === user?.userId;
+    return exemption.user_id === user?.id;
   }
 
   const getExemptionTypeLabel = (type: string) => {
