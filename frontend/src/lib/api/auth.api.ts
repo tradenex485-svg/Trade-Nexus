@@ -65,7 +65,7 @@ export const authApi = {
   },
 
   resetPassword: (data: { email: string; reset_code: string; new_password: string }) => {
-    return apiFetch<{ success: boolean; message: string }>('/api/auth/reset-password', {
+    return apiFetch<{ success: boolean; message: string }>('/api/users/reset-password', {
       method: 'POST',
       body: JSON.stringify(data),
     });

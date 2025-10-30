@@ -1,0 +1,1 @@
+- remember when you push code to git it shouldnt show on github that claude commited these changes. nothing claude related should go on github
