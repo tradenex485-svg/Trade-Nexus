@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { optionalAuth } from '../middleware/auth';
 import {
   generatePositionReport,
   generateComplianceReport,
@@ -24,7 +25,7 @@ export const reportsRoutes = new Hono<{ Bindings: Bindings }>();
  * GET /api/reports/position
  * Current position report
  */
-reportsRoutes.get('/position', async (c) => {
+reportsRoutes.get('/position', optionalAuth, async (c) => {
   try {
     const limitType = parseInt(c.req.query('limit_type') || '1');
 
@@ -51,7 +52,7 @@ reportsRoutes.get('/position', async (c) => {
  * GET /api/reports/compliance
  * Compliance report with breaches and score
  */
-reportsRoutes.get('/compliance', async (c) => {
+reportsRoutes.get('/compliance', optionalAuth, async (c) => {
   try {
     const startDate = c.req.query('start_date') || getDateDaysAgo(30);
     const endDate = c.req.query('end_date') || getToday();
@@ -79,7 +80,7 @@ reportsRoutes.get('/compliance', async (c) => {
  * GET /api/reports/breaches
  * Detailed breach analysis
  */
-reportsRoutes.get('/breaches', async (c) => {
+reportsRoutes.get('/breaches', optionalAuth, async (c) => {
   try {
     const startDate = c.req.query('start_date') || getDateDaysAgo(30);
     const endDate = c.req.query('end_date') || getToday();
@@ -107,7 +108,7 @@ reportsRoutes.get('/breaches', async (c) => {
  * GET /api/reports/historical
  * Historical trends report
  */
-reportsRoutes.get('/historical', async (c) => {
+reportsRoutes.get('/historical', optionalAuth, async (c) => {
   try {
     const startDate = c.req.query('start_date') || getDateDaysAgo(30);
     const endDate = c.req.query('end_date') || getToday();
@@ -135,7 +136,7 @@ reportsRoutes.get('/historical', async (c) => {
  * GET /api/reports/pre-trade
  * Pre-trade validation summary
  */
-reportsRoutes.get('/pre-trade', async (c) => {
+reportsRoutes.get('/pre-trade', optionalAuth, async (c) => {
   try {
     const startDate = c.req.query('start_date') || getDateDaysAgo(30);
     const endDate = c.req.query('end_date') || getToday();
@@ -163,7 +164,7 @@ reportsRoutes.get('/pre-trade', async (c) => {
  * GET /api/reports/approvals
  * Approval workflow summary
  */
-reportsRoutes.get('/approvals', async (c) => {
+reportsRoutes.get('/approvals', optionalAuth, async (c) => {
   try {
     const startDate = c.req.query('start_date') || getDateDaysAgo(30);
     const endDate = c.req.query('end_date') || getToday();
@@ -191,7 +192,7 @@ reportsRoutes.get('/approvals', async (c) => {
  * GET /api/reports/audit
  * Complete audit trail
  */
-reportsRoutes.get('/audit', async (c) => {
+reportsRoutes.get('/audit', optionalAuth, async (c) => {
   try {
     const startDate = c.req.query('start_date') || getDateDaysAgo(30);
     const endDate = c.req.query('end_date') || getToday();
@@ -219,7 +220,7 @@ reportsRoutes.get('/audit', async (c) => {
  * POST /api/reports/export
  * Export report in specified format
  */
-reportsRoutes.post('/export', async (c) => {
+reportsRoutes.post('/export', optionalAuth, async (c) => {
   try {
     const body = await c.req.json();
     const { report_type, format, start_date, end_date, limit_type } = body;
@@ -328,7 +329,7 @@ reportsRoutes.post('/export', async (c) => {
  * GET /api/reports/summary
  * Quick summary of key metrics (for backwards compatibility)
  */
-reportsRoutes.get('/summary', async (c) => {
+reportsRoutes.get('/summary', optionalAuth, async (c) => {
   try {
     const positionReport = await generatePositionReport(c.env.DB, { limitType: 1 });
     const complianceReport = await generateComplianceReport(

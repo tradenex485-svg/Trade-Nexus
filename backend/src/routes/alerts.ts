@@ -112,7 +112,7 @@ alertsRoutes.get('/', optionalAuth, async (c) => {
  * GET /api/alerts/stats
  * Get alert statistics
  */
-alertsRoutes.get('/stats', async (c) => {
+alertsRoutes.get('/stats', optionalAuth, async (c) => {
   try {
     const stats = await getAlertStats(c.env.DB);
 
