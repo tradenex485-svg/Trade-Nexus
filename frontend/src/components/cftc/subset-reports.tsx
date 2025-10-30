@@ -6,8 +6,16 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { subsetReportsApi } from '@/lib/api';
-import { FileText, Download, Calendar, TrendingUp, AlertCircle, Loader2 } from 'lucide-react';
+import { FileText, Download, Calendar, TrendingUp, AlertCircle, Loader2, FileSpreadsheet } from 'lucide-react';
 import { cn } from '@/lib/utils';
+
+// Icon color mapping to avoid Tailwind JIT compilation issues
+const iconColorClasses = {
+  blue: 'text-blue-400',
+  green: 'text-green-400',
+  purple: 'text-purple-400',
+  orange: 'text-orange-400',
+} as const;
 
 export function SubsetReports() {
   const [loading, setLoading] = useState<string | null>(null);
@@ -15,34 +23,48 @@ export function SubsetReports() {
   const [reportData, setReportData] = useState<any>(null);
   const [selectedReport, setSelectedReport] = useState<string | null>(null);
 
+  // Date range states
+  const [startDate, setStartDate] = useState<string>(() => {
+    const date = new Date();
+    date.setDate(date.getDate() - 30);
+    return date.toISOString().split('T')[0];
+  });
+  const [endDate, setEndDate] = useState<string>(() => {
+    return new Date().toISOString().split('T')[0];
+  });
+
   const reports = [
     {
       id: 'top-counterparties',
       name: 'Top 10 Physical Counterparties',
       description: 'Natural gas physical counterparty analysis with volume breakdown',
       icon: TrendingUp,
-      color: 'blue',
+      color: 'blue' as const,
+      usesDateRange: true,
     },
     {
       id: 'next-day-fixed',
       name: 'Next-Day Fixed Price',
       description: 'Physical next-day fixed-price transactions',
       icon: FileText,
-      color: 'green',
+      color: 'green' as const,
+      usesDateRange: false,
     },
     {
       id: 'next-day-index',
       name: 'Next-Day Index Based',
       description: 'Physical next-day index-based transactions',
       icon: FileText,
-      color: 'purple',
+      color: 'purple' as const,
+      usesDateRange: false,
     },
     {
       id: 'next-day-exposure',
       name: 'Next-Day Print Exposure',
       description: 'Exposure summary by market location',
       icon: TrendingUp,
-      color: 'orange',
+      color: 'orange' as const,
+      usesDateRange: false,
     },
   ];
 
@@ -52,24 +74,19 @@ export function SubsetReports() {
       setError(null);
       setSelectedReport(reportId);
 
-      const today = new Date().toISOString().split('T')[0];
-      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
-        .toISOString()
-        .split('T')[0];
-
       let data;
       switch (reportId) {
         case 'top-counterparties':
-          data = await subsetReportsApi.getTopCounterparties(thirtyDaysAgo, today);
+          data = await subsetReportsApi.getTopCounterparties(startDate, endDate);
           break;
         case 'next-day-fixed':
-          data = await subsetReportsApi.getNextDayFixed(today);
+          data = await subsetReportsApi.getNextDayFixed(endDate); // Use endDate for "target date"
           break;
         case 'next-day-index':
-          data = await subsetReportsApi.getNextDayIndex(today);
+          data = await subsetReportsApi.getNextDayIndex(endDate);
           break;
         case 'next-day-exposure':
-          data = await subsetReportsApi.getNextDayExposure(today);
+          data = await subsetReportsApi.getNextDayExposure(endDate);
           break;
       }
 
@@ -81,16 +98,53 @@ export function SubsetReports() {
     }
   };
 
-  const downloadReport = () => {
-    if (!reportData) return;
+  const downloadReport = (format: 'json' | 'csv' = 'json') => {
+    if (!reportData || !reportData.data) return;
 
-    const blob = new Blob([JSON.stringify(reportData, null, 2)], {
-      type: 'application/json',
-    });
+    let blob: Blob;
+    let extension: string;
+
+    if (format === 'csv') {
+      // Convert to CSV
+      const data = reportData.data;
+      if (data.length === 0) {
+        setError('No data to export');
+        return;
+      }
+
+      // Get headers from first row
+      const headers = Object.keys(data[0]);
+      const csvHeaders = headers.join(',');
+
+      // Convert rows to CSV
+      const csvRows = data.map((row: any) =>
+        headers.map((header) => {
+          const value = row[header];
+          // Escape values that contain commas or quotes
+          if (value === null || value === undefined) return '';
+          const stringValue = String(value);
+          if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+            return `"${stringValue.replace(/"/g, '""')}"`;
+          }
+          return stringValue;
+        }).join(',')
+      );
+
+      const csvContent = [csvHeaders, ...csvRows].join('\n');
+      blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      extension = 'csv';
+    } else {
+      // JSON format
+      blob = new Blob([JSON.stringify(reportData, null, 2)], {
+        type: 'application/json',
+      });
+      extension = 'json';
+    }
+
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${selectedReport}-${new Date().toISOString().split('T')[0]}.json`;
+    a.download = `${selectedReport}-${new Date().toISOString().split('T')[0]}.${extension}`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -116,6 +170,41 @@ export function SubsetReports() {
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
+
+          {/* Date Range Selector */}
+          <Card className="bg-slate-900/50 border-slate-600">
+            <CardContent className="pt-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="start-date" className="block text-sm font-medium text-slate-400 mb-2">
+                    Start Date
+                  </label>
+                  <input
+                    id="start-date"
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="end-date" className="block text-sm font-medium text-slate-400 mb-2">
+                    End Date / Target Date
+                  </label>
+                  <input
+                    id="end-date"
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+              <p className="text-xs text-slate-500 mt-2">
+                * Top Counterparties uses date range. Next-day reports use End Date as target date.
+              </p>
+            </CardContent>
+          </Card>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {reports.map((report) => {
@@ -148,7 +237,7 @@ export function SubsetReports() {
                     <Icon
                       className={cn(
                         'h-5 w-5',
-                        `text-${report.color}-400`
+                        iconColorClasses[report.color]
                       )}
                     />
                     {isSelected && (
@@ -188,17 +277,23 @@ export function SubsetReports() {
           {reportData && (
             <Card className="bg-slate-900/50 border-slate-600">
               <CardHeader>
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                   <div>
                     <CardTitle className="text-white text-lg">Report Results</CardTitle>
                     <CardDescription>
                       {reportData.report_type} - {reportData.total_counterparties || reportData.total_transactions || reportData.total_locations || 0} records
                     </CardDescription>
                   </div>
-                  <Button size="sm" variant="outline" onClick={downloadReport}>
-                    <Download className="h-4 w-4 mr-2" />
-                    Download JSON
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="outline" onClick={() => downloadReport('csv')}>
+                      <FileSpreadsheet className="h-4 w-4 mr-2" />
+                      CSV
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => downloadReport('json')}>
+                      <Download className="h-4 w-4 mr-2" />
+                      JSON
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
