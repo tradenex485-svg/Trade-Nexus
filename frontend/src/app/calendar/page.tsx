@@ -149,24 +149,24 @@ export default function CalendarPage() {
 
   return (
     <AuthGuard>
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4 md:p-8">
-        <div className="max-w-7xl mx-auto space-y-6">
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4 md:p-6 lg:p-8">
+        <div className="max-w-7xl mx-auto space-y-4 md:space-y-6">
           <div>
-            <h1 className="text-3xl font-bold text-white mb-2">Trading Calendar</h1>
-            <p className="text-slate-400">View trading days, holidays, and key market events</p>
+            <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">Trading Calendar</h1>
+            <p className="text-sm md:text-base text-slate-400">View trading days, holidays, and key market events</p>
           </div>
 
           <Card className="cyber-border border-purple-500/30">
             <CardHeader>
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <CardTitle className="text-2xl">
+                <CardTitle className="text-xl md:text-2xl">
                   {currentDate.toLocaleString('default', { month: 'long', year: 'numeric' })}
                 </CardTitle>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
                   <Button variant="outline" size="sm" onClick={goToToday}>
-                    <CalendarIcon className="w-4 h-4 mr-2" />
-                    Today
+                    <CalendarIcon className="w-4 h-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Today</span>
                   </Button>
                   <Button variant="outline" size="icon" onClick={previousMonth}>
                     <ChevronLeft className="w-4 h-4" />
@@ -193,10 +193,10 @@ export default function CalendarPage() {
               </div>
 
               {/* Calendar Grid */}
-              <div className="grid grid-cols-7 gap-2">
+              <div className="grid grid-cols-7 gap-1 sm:gap-2">
                 {/* Day headers */}
                 {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-                  <div key={day} className="text-center text-sm font-semibold text-gray-400 py-2">
+                  <div key={day} className="text-center text-xs sm:text-sm font-semibold text-gray-400 py-2">
                     {day}
                   </div>
                 ))}
@@ -214,25 +214,25 @@ export default function CalendarPage() {
                     return (
                       <div
                         key={index}
-                        className={`aspect-square glass border rounded-lg p-2 transition-all ${
+                        className={`aspect-square glass border rounded-lg p-1 sm:p-2 transition-all ${
                           dayInfo.isCurrentMonth
                             ? typeConfig
                               ? `${typeConfig.color} border`
                               : 'border-white/10 hover:border-white/30'
                             : 'border-white/5 opacity-40'
                         } ${
-                          isToday(dayInfo.date) ? 'ring-2 ring-blue-500' : ''
+                          isToday(dayInfo.date) ? 'ring-1 sm:ring-2 ring-blue-500' : ''
                         }`}
                       >
                         <div className="flex flex-col h-full">
-                          <div className={`text-sm font-medium ${
+                          <div className={`text-xs sm:text-sm font-medium ${
                             dayInfo.isCurrentMonth ? 'text-white' : 'text-gray-600'
                           }`}>
                             {dayInfo.date.getDate()}
                           </div>
 
                           {dayInfo.schedule && dayInfo.isCurrentMonth && (
-                            <div className="mt-auto">
+                            <div className="mt-auto hidden sm:block">
                               {dayInfo.schedule.holiday_name && (
                                 <div className="text-[10px] text-red-400 truncate" title={dayInfo.schedule.holiday_name}>
                                   {dayInfo.schedule.holiday_name}
@@ -258,10 +258,10 @@ export default function CalendarPage() {
           {/* Upcoming Events */}
           <Card className="cyber-border border-purple-500/30">
             <CardHeader>
-              <CardTitle>Upcoming Events</CardTitle>
+              <CardTitle className="text-lg md:text-xl">Upcoming Events</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2">
+              <div className="space-y-2 md:space-y-3">
                 {schedules
                   .filter(s => {
                     const scheduleDate = new Date(s.dated);
@@ -280,25 +280,25 @@ export default function CalendarPage() {
                     return (
                       <div
                         key={schedule.id}
-                        className={`p-3 rounded-lg border ${typeConfig?.color || 'border-white/10 bg-white/5'}`}
+                        className={`p-3 md:p-4 rounded-lg border ${typeConfig?.color || 'border-white/10 bg-white/5'}`}
                       >
-                        <div className="flex items-center justify-between">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                           <div>
-                            <div className="font-medium text-white">
+                            <div className="font-medium text-white text-sm md:text-base">
                               {date.toLocaleDateString('default', {
                                 weekday: 'long',
                                 month: 'long',
                                 day: 'numeric'
                               })}
                             </div>
-                            <div className="text-sm text-gray-400">
+                            <div className="text-xs sm:text-sm text-gray-400">
                               {schedule.holiday_name && `Holiday: ${schedule.holiday_name}`}
                               {schedule.nymex_futures_contract_expiration && 'NYMEX Futures Contract Expiration'}
                               {schedule.bid_week_day && schedule.bid_week_day >= 4 && `Bid Week Day ${schedule.bid_week_day - 3}`}
                             </div>
                           </div>
                           {typeConfig && (
-                            <div className="text-xs font-medium px-2 py-1 rounded bg-white/10">
+                            <div className="text-xs font-medium px-2 py-1 rounded bg-white/10 w-fit">
                               {typeConfig.label}
                             </div>
                           )}
