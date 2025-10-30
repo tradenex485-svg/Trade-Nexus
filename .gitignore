@@ -43,3 +43,6 @@ coverage/
 # Temporary files
 *.tmp
 .cache/
+
+# Claude Code
+.claude/
