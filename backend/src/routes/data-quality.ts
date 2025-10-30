@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { authenticate, authorize } from '../middleware/auth';
 import {
   runQualityChecks,
   detectDuplicates,
@@ -21,7 +22,7 @@ export const dataQualityRoutes = new Hono<{ Bindings: Bindings }>();
  * GET /api/data-quality/dashboard
  * Get comprehensive data quality metrics dashboard
  */
-dataQualityRoutes.get('/dashboard', async (c) => {
+dataQualityRoutes.get('/dashboard', authenticate, async (c) => {
   try {
     // Get latest quality check
     const latestCheck = await c.env.DB.prepare(`
@@ -91,7 +92,7 @@ dataQualityRoutes.get('/dashboard', async (c) => {
  * GET /api/data-quality/issues
  * Get list of data quality issues with filters
  */
-dataQualityRoutes.get('/issues', async (c) => {
+dataQualityRoutes.get('/issues', authenticate, async (c) => {
   try {
     const status = c.req.query('status') || 'open';
     const severity = c.req.query('severity');
@@ -150,7 +151,7 @@ dataQualityRoutes.get('/issues', async (c) => {
  * GET /api/data-quality/rules
  * Get data quality rules
  */
-dataQualityRoutes.get('/rules', async (c) => {
+dataQualityRoutes.get('/rules', authenticate, async (c) => {
   try {
     const includeInactive = c.req.query('include_inactive') === 'true';
 
@@ -181,8 +182,9 @@ dataQualityRoutes.get('/rules', async (c) => {
 /**
  * POST /api/data-quality/rules
  * Create new quality rule
+ * Requires admin or compliance role
  */
-dataQualityRoutes.post('/rules', async (c) => {
+dataQualityRoutes.post('/rules', authenticate, authorize('admin', 'compliance', 'superadmin'), async (c) => {
   try {
     const body = await c.req.json();
 
@@ -238,8 +240,9 @@ dataQualityRoutes.post('/rules', async (c) => {
 /**
  * PUT /api/data-quality/rules/:id
  * Update quality rule
+ * Requires admin or compliance role
  */
-dataQualityRoutes.put('/rules/:id', async (c) => {
+dataQualityRoutes.put('/rules/:id', authenticate, authorize('admin', 'compliance', 'superadmin'), async (c) => {
   try {
     const id = parseInt(c.req.param('id'));
     const body = await c.req.json();
@@ -292,8 +295,9 @@ dataQualityRoutes.put('/rules/:id', async (c) => {
 /**
  * DELETE /api/data-quality/rules/:id
  * Delete quality rule
+ * Requires admin or superadmin role
  */
-dataQualityRoutes.delete('/rules/:id', async (c) => {
+dataQualityRoutes.delete('/rules/:id', authenticate, authorize('admin', 'superadmin'), async (c) => {
   try {
     const id = parseInt(c.req.param('id'));
 
@@ -319,8 +323,9 @@ dataQualityRoutes.delete('/rules/:id', async (c) => {
 /**
  * POST /api/data-quality/run
  * Manually trigger quality checks
+ * Requires admin or compliance role
  */
-dataQualityRoutes.post('/run', async (c) => {
+dataQualityRoutes.post('/run', authenticate, authorize('admin', 'compliance', 'superadmin'), async (c) => {
   try {
     console.log('Running manual quality checks...');
 
@@ -348,7 +353,7 @@ dataQualityRoutes.post('/run', async (c) => {
  * GET /api/data-quality/reconciliation
  * Get reconciliation status and history
  */
-dataQualityRoutes.get('/reconciliation', async (c) => {
+dataQualityRoutes.get('/reconciliation', authenticate, async (c) => {
   try {
     const limit = parseInt(c.req.query('limit') || '20');
 
@@ -379,8 +384,9 @@ dataQualityRoutes.get('/reconciliation', async (c) => {
 /**
  * POST /api/data-quality/reconciliation
  * Run data reconciliation
+ * Requires admin or compliance role
  */
-dataQualityRoutes.post('/reconciliation', async (c) => {
+dataQualityRoutes.post('/reconciliation', authenticate, authorize('admin', 'compliance', 'superadmin'), async (c) => {
   try {
     const body = await c.req.json();
     const { source_table, target_table, reconciliation_key } = body;
@@ -419,7 +425,7 @@ dataQualityRoutes.post('/reconciliation', async (c) => {
  * GET /api/data-quality/lineage/:table/:id
  * Get data lineage for a specific record
  */
-dataQualityRoutes.get('/lineage/:table/:id', async (c) => {
+dataQualityRoutes.get('/lineage/:table/:id', authenticate, async (c) => {
   try {
     const table = c.req.param('table');
     const id = parseInt(c.req.param('id'));
@@ -461,8 +467,9 @@ dataQualityRoutes.get('/lineage/:table/:id', async (c) => {
 /**
  * PUT /api/data-quality/issues/:id
  * Update issue status (resolve, ignore)
+ * Requires admin or compliance role
  */
-dataQualityRoutes.put('/issues/:id', async (c) => {
+dataQualityRoutes.put('/issues/:id', authenticate, authorize('admin', 'compliance', 'superadmin'), async (c) => {
   try {
     const id = parseInt(c.req.param('id'));
     const body = await c.req.json();
@@ -515,7 +522,7 @@ dataQualityRoutes.put('/issues/:id', async (c) => {
  * GET /api/data-quality/uploads
  * Get file upload history
  */
-dataQualityRoutes.get('/uploads', async (c) => {
+dataQualityRoutes.get('/uploads', authenticate, async (c) => {
   try {
     const limit = parseInt(c.req.query('limit') || '50');
     const status = c.req.query('status');
@@ -556,7 +563,7 @@ dataQualityRoutes.get('/uploads', async (c) => {
  * GET /api/data-quality/stats
  * Get overall data quality statistics
  */
-dataQualityRoutes.get('/stats', async (c) => {
+dataQualityRoutes.get('/stats', authenticate, async (c) => {
   try {
     // Total issues
     const totalIssues = await c.env.DB.prepare('SELECT COUNT(*) as count FROM data_quality_issues').first();
