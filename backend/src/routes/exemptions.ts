@@ -248,7 +248,7 @@ exemptionsRoutes.post('/', authenticate, authorize('exemptions.create'), async (
  * POST /api/exemptions/:id/approve
  * Approve an exemption request
  */
-exemptionsRoutes.post('/:id/approve', authenticate, authorize('exemptions.approve'), async (c) => {
+exemptionsRoutes.post('/:id/approve', authenticate, authorize('exemptions.update'), async (c) => {
   try {
     const user = c.get('user');
     const exemptionId = parseInt(c.req.param('id'));
@@ -317,7 +317,7 @@ exemptionsRoutes.post('/:id/approve', authenticate, authorize('exemptions.approv
  * POST /api/exemptions/:id/deny
  * Deny an exemption request
  */
-exemptionsRoutes.post('/:id/deny', authenticate, authorize('exemptions.approve'), async (c) => {
+exemptionsRoutes.post('/:id/deny', authenticate, authorize('exemptions.update'), async (c) => {
   try {
     const user = c.get('user');
     const exemptionId = parseInt(c.req.param('id'));

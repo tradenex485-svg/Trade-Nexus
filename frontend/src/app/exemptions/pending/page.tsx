@@ -213,7 +213,7 @@ export default function PendingExemptionsPage() {
   };
 
   return (
-    <AuthGuard requiredPermissions={['exemptions.approve']}>
+    <AuthGuard requiredPermissions={['exemptions.update']}>
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-6">
