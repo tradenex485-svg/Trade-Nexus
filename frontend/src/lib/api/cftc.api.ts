@@ -23,6 +23,7 @@ export const monthlySchedulesApi = {
 
 // Bid Week API (CFTC Phase 2)
 export const bidWeekApi = {
+  // Status endpoints
   getStatusAll: () => {
     return apiFetch<{ check_date: string; exchanges: any[]; total: number }>('/api/bid-week/status/all');
   },
@@ -32,16 +33,93 @@ export const bidWeekApi = {
     return apiFetch<any>(`/api/bid-week/status?exchange_code=${exchangeCode}${params}`);
   },
 
-  getHolidays: (exchangeCode: string, year?: number) => {
-    const params = year ? `&year=${year}` : '';
-    return apiFetch<{ exchange_code: string; holidays: any[]; total: number }>(
-      `/api/bid-week/holidays?exchange_code=${exchangeCode}${params}`
-    );
-  },
-
   getSpotMonth: (exchangeCode: string, checkDate?: string) => {
     const params = checkDate ? `&check_date=${checkDate}` : '';
     return apiFetch<any>(`/api/bid-week/spot-month?exchange_code=${exchangeCode}${params}`);
+  },
+
+  // Holiday endpoints
+  getAllHolidays: (year?: number, activeOnly: boolean = true) => {
+    const params = new URLSearchParams();
+    if (year) params.append('year', year.toString());
+    if (!activeOnly) params.append('active_only', 'false');
+    return apiFetch<{ holidays: any[]; total: number }>(`/api/bid-week/holidays?${params}`);
+  },
+
+  getHolidays: (exchangeCode: string, year?: number, activeOnly: boolean = true) => {
+    const params = new URLSearchParams();
+    params.append('exchange_code', exchangeCode);
+    if (year) params.append('year', year.toString());
+    if (!activeOnly) params.append('active_only', 'false');
+    return apiFetch<{ exchange_code: string; holidays: any[]; total: number }>(
+      `/api/bid-week/holidays?${params}`
+    );
+  },
+
+  addHoliday: (data: { exchange_code: string; holiday_date: string; holiday_name: string; is_active?: number }) => {
+    return apiFetch<{ message: string; holiday: any }>('/api/bid-week/holidays', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  updateHoliday: (exchangeCode: string, date: string, data: { holiday_name?: string; is_active?: number }) => {
+    return apiFetch<{ message: string }>(`/api/bid-week/holidays/${exchangeCode}/${date}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  deleteHoliday: (exchangeCode: string, date: string) => {
+    return apiFetch<{ message: string }>(`/api/bid-week/holidays/${exchangeCode}/${date}`, {
+      method: 'DELETE',
+    });
+  },
+
+  bulkImportHolidays: (holidays: Array<{ exchange_code: string; holiday_date: string; holiday_name: string; is_active?: number }>) => {
+    return apiFetch<{ message: string; imported_count: number; total_submitted: number }>('/api/bid-week/holidays/bulk-import', {
+      method: 'POST',
+      body: JSON.stringify({ holidays }),
+    });
+  },
+
+  // Schedule endpoints
+  getSchedules: (exchangeCode: string, startDate?: string, endDate?: string) => {
+    const params = new URLSearchParams();
+    params.append('exchange_code', exchangeCode);
+    if (startDate) params.append('start_date', startDate);
+    if (endDate) params.append('end_date', endDate);
+    return apiFetch<{ exchange_code: string; schedules: any[]; total: number }>(`/api/bid-week/schedules?${params}`);
+  },
+
+  generateSchedules: (data: { exchange_code: string; year: number; month: number; months_ahead?: number }) => {
+    return apiFetch<{ message: string; exchange_code: string; schedules_generated: number; schedules: any[] }>('/api/bid-week/schedules/generate', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  regenerateSchedules: (data: { exchange_code: string; year: number; months_to_generate?: number }) => {
+    return apiFetch<{ message: string; exchange_code: string; year: number; schedules_generated: number }>('/api/bid-week/schedules/regenerate', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  autoGenerate: () => {
+    return apiFetch<{ message: string; results: any[] }>('/api/bid-week/auto-generate', {
+      method: 'POST',
+    });
+  },
+
+  // Utility endpoints
+  checkGoodBusinessDay: (exchangeCode: string, checkDate: string) => {
+    const params = new URLSearchParams();
+    params.append('exchange_code', exchangeCode);
+    params.append('check_date', checkDate);
+    return apiFetch<{ exchange_code: string; check_date: string; is_good_business_day: boolean; day_of_week: string }>(
+      `/api/bid-week/gbd-check?${params}`
+    );
   },
 };
 
