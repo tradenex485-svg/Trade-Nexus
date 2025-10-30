@@ -25,6 +25,10 @@ export const exemptionsApi = {
     return apiFetch<{ success: boolean; data: any }>('/api/exemptions/stats');
   },
 
+  getById: (id: number) => {
+    return apiFetch<{ success: boolean; data: any }>(`/api/exemptions/${id}`);
+  },
+
   approve: (id: number, approvalNotes?: string) => {
     return apiFetch<{ success: boolean; message: string }>(`/api/exemptions/${id}/approve`, {
       method: 'POST',
@@ -36,6 +40,12 @@ export const exemptionsApi = {
     return apiFetch<{ success: boolean; message: string }>(`/api/exemptions/${id}/deny`, {
       method: 'POST',
       body: JSON.stringify({ denial_reason: denialReason }),
+    });
+  },
+
+  delete: (id: number) => {
+    return apiFetch<{ success: boolean; message: string }>(`/api/exemptions/${id}`, {
+      method: 'DELETE',
     });
   },
 };

@@ -6,13 +6,28 @@
 import { Hono } from 'hono';
 import { authenticate, authorize } from '../middleware/auth';
 
-const app = new Hono();
+type Bindings = {
+  DB: D1Database;
+  CACHE: KVNamespace;
+  DOCUMENTS: R2Bucket;
+  SESSIONS: KVNamespace;
+  JWT_SECRET: string;
+  NODE_ENV: string;
+  FRONTEND_URL?: string;
+  SENTRY_DSN?: string;
+  TWILIO_ACCOUNT_SID?: string;
+  TWILIO_AUTH_TOKEN?: string;
+  TWILIO_PHONE_NUMBER?: string;
+  DATABASE_ENCRYPTION_KEY?: string;
+};
+
+export const exemptionsRoutes = new Hono<{ Bindings: Bindings }>();
 
 /**
  * GET /api/exemptions
  * Get all exemption requests with optional filtering
  */
-app.get('/', authenticate, async (c) => {
+exemptionsRoutes.get('/', authenticate, async (c) => {
   try {
     const user = c.get('user');
     const status = c.req.query('status');
@@ -49,7 +64,7 @@ app.get('/', authenticate, async (c) => {
     }
 
     // Filter by company if user is not super admin
-    if (user.role_id !== 3) {
+    if (user.role_id !== 5) {
       query += ` AND he.company_id = ?`;
       params.push(user.company_id);
     }
@@ -77,7 +92,7 @@ app.get('/', authenticate, async (c) => {
  * GET /api/exemptions/stats
  * Get exemption statistics
  */
-app.get('/stats', authenticate, async (c) => {
+exemptionsRoutes.get('/stats', authenticate, async (c) => {
   try {
     const user = c.get('user');
 
@@ -119,7 +134,7 @@ app.get('/stats', authenticate, async (c) => {
  * GET /api/exemptions/:id
  * Get a specific exemption request
  */
-app.get('/:id', authenticate, async (c) => {
+exemptionsRoutes.get('/:id', authenticate, async (c) => {
   try {
     const user = c.get('user');
     const exemptionId = parseInt(c.req.param('id'));
@@ -139,7 +154,7 @@ app.get('/:id', authenticate, async (c) => {
     const params: any[] = [exemptionId];
 
     // Filter by company if user is not super admin
-    if (user.role_id !== 3) {
+    if (user.role_id !== 5) {
       query += ` AND he.company_id = ?`;
       params.push(user.company_id);
     }
@@ -171,7 +186,7 @@ app.get('/:id', authenticate, async (c) => {
  * POST /api/exemptions
  * Create a new exemption request
  */
-app.post('/', authenticate, authorize('exemptions.create'), async (c) => {
+exemptionsRoutes.post('/', authenticate, authorize('exemptions.create'), async (c) => {
   try {
     const user = c.get('user');
     const {
@@ -193,7 +208,7 @@ app.post('/', authenticate, authorize('exemptions.create'), async (c) => {
     }
 
     // Use user's company if not specified (or if user is not super admin)
-    const effectiveCompanyId = (user.role_id === 3 && company_id) ? company_id : user.company_id;
+    const effectiveCompanyId = (user.role_id === 5 && company_id) ? company_id : user.company_id;
 
     // Insert exemption request
     const result = await c.env.DB.prepare(`
@@ -209,7 +224,7 @@ app.post('/', authenticate, authorize('exemptions.create'), async (c) => {
       requested_amount,
       business_justification,
       supporting_documents || null,
-      user.id
+      user.userId
     ).run();
 
     return c.json({
@@ -233,7 +248,7 @@ app.post('/', authenticate, authorize('exemptions.create'), async (c) => {
  * POST /api/exemptions/:id/approve
  * Approve an exemption request
  */
-app.post('/:id/approve', authenticate, authorize('exemptions.approve'), async (c) => {
+exemptionsRoutes.post('/:id/approve', authenticate, authorize('exemptions.approve'), async (c) => {
   try {
     const user = c.get('user');
     const exemptionId = parseInt(c.req.param('id'));
@@ -302,7 +317,7 @@ app.post('/:id/approve', authenticate, authorize('exemptions.approve'), async (c
  * POST /api/exemptions/:id/deny
  * Deny an exemption request
  */
-app.post('/:id/deny', authenticate, authorize('exemptions.approve'), async (c) => {
+exemptionsRoutes.post('/:id/deny', authenticate, authorize('exemptions.approve'), async (c) => {
   try {
     const user = c.get('user');
     const exemptionId = parseInt(c.req.param('id'));
@@ -366,7 +381,7 @@ app.post('/:id/deny', authenticate, authorize('exemptions.approve'), async (c) =
  * DELETE /api/exemptions/:id
  * Delete an exemption request (only pending ones)
  */
-app.delete('/:id', authenticate, authorize('exemptions.delete'), async (c) => {
+exemptionsRoutes.delete('/:id', authenticate, authorize('exemptions.delete'), async (c) => {
   try {
     const user = c.get('user');
     const exemptionId = parseInt(c.req.param('id'));
@@ -392,7 +407,7 @@ app.delete('/:id', authenticate, authorize('exemptions.delete'), async (c) => {
     }
 
     // Only allow users to delete their own requests (unless super admin)
-    if (user.role_id !== 3 && exemption.user_id !== user.id) {
+    if (user.role_id !== 5 && exemption.user_id !== user.userId) {
       return c.json({
         success: false,
         error: 'You can only delete your own exemption requests',
@@ -414,5 +429,3 @@ app.delete('/:id', authenticate, authorize('exemptions.delete'), async (c) => {
     }, 500);
   }
 });
-
-export { app as exemptionsRoutes };
