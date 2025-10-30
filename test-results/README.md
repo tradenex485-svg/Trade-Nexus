@@ -23,6 +23,7 @@ This folder contains comprehensive test results for all Trade Nexus API endpoint
 | [PRE_TRADE_API_TEST_RESULTS.md](./PRE_TRADE_API_TEST_RESULTS.md) | Pre-Trade Validation | ✅ All Working | Fixed endpoint naming, frontend complete |
 | [RISK_THRESHOLDS_API_TEST_RESULTS.md](./RISK_THRESHOLDS_API_TEST_RESULTS.md) | Risk Thresholds Management | ✅ All Working | 4 critical bugs fixed, RBAC verified |
 | [RISK_SCENARIOS_API_TEST_RESULTS.md](./RISK_SCENARIOS_API_TEST_RESULTS.md) | Risk Scenarios & Stress Testing | ✅ All Working | 4 critical bugs fixed, system scenario protection |
+| [RISK_METRICS_API_TEST_RESULTS.md](./RISK_METRICS_API_TEST_RESULTS.md) | Risk Metrics & VaR Calculations | ✅ All Working | 3 critical security bugs fixed, 8 endpoints tested |
 
 ---
 
@@ -106,11 +107,21 @@ This folder contains comprehensive test results for all Trade Nexus API endpoint
 - **Results:** Get historical scenario results ✅
 - **Run All:** Execute all active scenarios ✅
 
+### Risk Metrics APIs (8 endpoints)
+- **VaR:** Value at Risk calculations (Historical, Parametric, Monte Carlo) ✅
+- **Concentration:** Portfolio concentration metrics ✅
+- **Correlations:** Commodity correlation matrix ✅
+- **Dashboard:** Comprehensive risk dashboard ✅
+- **VaR History:** Historical VaR data ✅
+- **Trends:** Risk trend indicators (30/60/90 days) ✅
+- **Risk Decomposition:** Risk contribution by commodity ✅
+- **Calculate All:** Calculate and save all metrics ✅
+
 ---
 
 ## 🔧 Issues Fixed
 
-### Critical Bugs (21)
+### Critical Bugs (24)
 1. **Users API - user.userId vs user.id mismatch** - Fixed in 11 locations
 2. **Users API - Non-existent database columns** - Removed desk_name, is_primary references
 3. **Users API - Undefined values in SQL** - Added null coalescing operators
@@ -132,6 +143,9 @@ This folder contains comprehensive test results for all Trade Nexus API endpoint
 19. **Risk Scenarios - Missing authorization on write operations** - Added authorize('system.configure') to POST/PUT/DELETE
 20. **Risk Scenarios - Incomplete Bindings type** - Added CACHE, DOCUMENTS, and all optional bindings
 21. **Risk Scenarios - Missing import statement** - Added import for authenticate and authorize middleware
+22. **Risk Metrics - No authentication on any endpoint** - Added authenticate middleware to all 8 endpoints
+23. **Risk Metrics - Missing authentication imports** - Added import for authenticate and authorize middleware
+24. **Risk Metrics - Incomplete Bindings type** - Added CACHE, DOCUMENTS, and all optional bindings
 
 ### Configuration Issues (2)
 1. **SAML - Missing encryption key** - Generated and configured DATABASE_ENCRYPTION_KEY
@@ -253,5 +267,4 @@ For questions or issues with these test results:
 ---
 
 **Last Updated:** October 30, 2025
-**Tested By:** Claude Code
 **Environment:** Development (Cloudflare Workers)

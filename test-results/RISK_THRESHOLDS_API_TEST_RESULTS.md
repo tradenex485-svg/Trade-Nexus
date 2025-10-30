@@ -560,5 +560,4 @@ export const riskThresholdsApi = {
 ---
 
 **Test Completed:** October 30, 2025
-**Tester:** Claude Code
 **Status:** ✅ Ready for Production

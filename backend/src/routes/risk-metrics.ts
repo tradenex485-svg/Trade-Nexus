@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { authenticate, authorize } from '../middleware/auth';
 import {
   calculateHistoricalVaR,
   calculateParametricVaR,
@@ -10,9 +11,17 @@ import {
 
 type Bindings = {
   DB: D1Database;
+  CACHE: KVNamespace;
+  DOCUMENTS: R2Bucket;
   SESSIONS: KVNamespace;
   JWT_SECRET: string;
   NODE_ENV: string;
+  FRONTEND_URL?: string;
+  SENTRY_DSN?: string;
+  TWILIO_ACCOUNT_SID?: string;
+  TWILIO_AUTH_TOKEN?: string;
+  TWILIO_PHONE_NUMBER?: string;
+  DATABASE_ENCRYPTION_KEY?: string;
 };
 
 export const riskMetricsRoutes = new Hono<{ Bindings: Bindings }>();
@@ -21,7 +30,7 @@ export const riskMetricsRoutes = new Hono<{ Bindings: Bindings }>();
  * GET /api/risk-metrics/var
  * Calculate current portfolio VaR using multiple methods
  */
-riskMetricsRoutes.get('/var', async (c) => {
+riskMetricsRoutes.get('/var', authenticate, async (c) => {
   try {
     const method = c.req.query('method') || 'all'; // 'historical', 'parametric', 'monte_carlo', 'all'
     const confidenceLevel = parseInt(c.req.query('confidence') || '95');
@@ -67,7 +76,7 @@ riskMetricsRoutes.get('/var', async (c) => {
  * GET /api/risk-metrics/concentration
  * Get portfolio concentration metrics
  */
-riskMetricsRoutes.get('/concentration', async (c) => {
+riskMetricsRoutes.get('/concentration', authenticate, async (c) => {
   try {
     const metrics = await calculateConcentrationMetrics(c.env.DB);
 
@@ -92,7 +101,7 @@ riskMetricsRoutes.get('/concentration', async (c) => {
  * GET /api/risk-metrics/correlations
  * Get commodity correlations
  */
-riskMetricsRoutes.get('/correlations', async (c) => {
+riskMetricsRoutes.get('/correlations', authenticate, async (c) => {
   try {
     const lookbackDays = parseInt(c.req.query('lookback') || '30');
     const correlations = await calculateCommodityCorrelations(c.env.DB, lookbackDays);
@@ -119,7 +128,7 @@ riskMetricsRoutes.get('/correlations', async (c) => {
  * GET /api/risk-metrics/dashboard
  * Get comprehensive risk dashboard data
  */
-riskMetricsRoutes.get('/dashboard', async (c) => {
+riskMetricsRoutes.get('/dashboard', authenticate, async (c) => {
   try {
     // Calculate all metrics in parallel
     const [varHistorical, varParametric, varMonteCarlo, concentration] = await Promise.all([
@@ -194,7 +203,7 @@ riskMetricsRoutes.get('/dashboard', async (c) => {
  * GET /api/risk-metrics/var-history
  * Get historical VaR data
  */
-riskMetricsRoutes.get('/var-history', async (c) => {
+riskMetricsRoutes.get('/var-history', authenticate, async (c) => {
   try {
     const days = parseInt(c.req.query('days') || '30');
 
@@ -228,7 +237,7 @@ riskMetricsRoutes.get('/var-history', async (c) => {
  * GET /api/risk-metrics/trends
  * Get risk trend indicators
  */
-riskMetricsRoutes.get('/trends', async (c) => {
+riskMetricsRoutes.get('/trends', authenticate, async (c) => {
   try {
     // Get rolling metrics (30, 60, 90 days)
     const metrics30 = await c.env.DB.prepare(`
@@ -291,7 +300,7 @@ riskMetricsRoutes.get('/trends', async (c) => {
  * GET /api/risk-metrics/risk-decomposition
  * Get risk contribution by commodity
  */
-riskMetricsRoutes.get('/risk-decomposition', async (c) => {
+riskMetricsRoutes.get('/risk-decomposition', authenticate, async (c) => {
   try {
     // Get risk contribution for each commodity
     const decomposition = await c.env.DB.prepare(`
@@ -344,7 +353,7 @@ riskMetricsRoutes.get('/risk-decomposition', async (c) => {
  * POST /api/risk-metrics/calculate-all
  * Calculate and save all risk metrics
  */
-riskMetricsRoutes.post('/calculate-all', async (c) => {
+riskMetricsRoutes.post('/calculate-all', authenticate, async (c) => {
   try {
     // Calculate all VaR methods
     const [varHistorical, varParametric, varMonteCarlo] = await Promise.all([
