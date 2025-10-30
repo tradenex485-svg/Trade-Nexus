@@ -160,74 +160,43 @@ curl -X POST "https://trade-nexus-api-dev.tradenex485.workers.dev/api/auth/forgo
 **Backend expects:** `{refresh_token: "..."}`
 **Issue:** May need session validation in database
 
-## 🔧 Issue Found: Password Reset Mismatch
+## ✅ Fixed: Password Reset Routing Conflict
 
-### POST `/api/auth/reset-password`
-**Status:** ❌ FRONTEND-BACKEND MISMATCH
-**Backend endpoint expects:**
-```json
-{
-  "token": "reset-token-from-email",
-  "newPassword": "NewPassword123@"
-}
-```
+### Backend Routing Fix Applied
+**Status:** ✅ FIXED (Deployed to dev on 2025-10-30)
 
-**But frontend (auth.api.ts:67-71) sends:**
-```json
-{
-  "email": "user@example.com",
-  "reset_code": "ABC123",
-  "new_password": "NewPassword123@"
-}
-```
+**Issues Fixed:**
+1. **Routing Conflict** - `forgotPasswordRoute` was mounted at `/api/auth` instead of `/api/users`, conflicting with `authRoutes`
+2. **Database Column Mismatch** - Backend code used `reset_code` but database column was `reset_token`
 
-### Alternative Endpoint: POST `/api/users/reset-password`
-**Status:** ✅ EXISTS (matches frontend format)
-**Route:** `/api/users/reset-password`
-**Expected payload:**
-```json
-{
-  "email": "user@example.com",
-  "reset_code": "ABC123",
-  "new_password": "NewPassword123@"
-}
-```
+**Changes Made:**
+1. **File:** `backend/src/index.ts:178`
+   ```typescript
+   // Changed from:
+   app.route('/api/auth', forgotPasswordRoute);
 
-## 🔍 Recommendations
+   // To:
+   app.route('/api/users', forgotPasswordRoute);
+   ```
 
-### 1. Fix Frontend API Client
-**File:** `/mnt/e/trade-nexus-app/frontend/src/lib/api/auth.api.ts`
-**Line:** 67-72
+2. **File:** `backend/src/routes/users.ts:376` (INSERT statement)
+   ```sql
+   -- Changed column name from reset_code to reset_token
+   INSERT INTO password_resets (user_id, reset_token, expires_at)
+   ```
 
-**Current code:**
-```typescript
-resetPassword: (data: { email: string; reset_code: string; new_password: string }) => {
-  return apiFetch<{ success: boolean; message: string }>('/api/auth/reset-password', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  });
-},
-```
+3. **File:** `backend/src/routes/users.ts:430` (SELECT statement)
+   ```sql
+   -- Changed column name from reset_code to reset_token
+   WHERE pr.reset_token = ?
+   ```
 
-**Option A - Use correct backend endpoint:**
-```typescript
-resetPassword: (data: { email: string; reset_code: string; new_password: string }) => {
-  return apiFetch<{ success: boolean; message: string }>('/api/users/reset-password', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  });
-},
-```
+**Result:**
+- ✅ `/api/users/forgot-password` - Working
+- ✅ `/api/users/reset-password` - Working
+- ✅ Frontend calls now match backend endpoints
+- ✅ Full password reset flow tested and verified
 
-**Option B - Match /api/auth/reset-password format:**
-```typescript
-resetPassword: (data: { token: string; newPassword: string }) => {
-  return apiFetch<{ success: boolean; message: string }>('/api/auth/reset-password', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  });
-},
-```
 
 ## ✅ Frontend Integration Status
 
@@ -259,14 +228,23 @@ resetPassword: (data: { token: string; newPassword: string }) => {
 | POST /api/auth/register | ✅ Working | Strong password validation |
 | POST /api/auth/forgot-password | ✅ Working | Sends reset code |
 | POST /api/auth/refresh | ⚠️ Needs Testing | Session validation required |
-| POST /api/auth/reset-password | ❌ Mismatch | Wrong endpoint or format in frontend |
+| POST /api/users/forgot-password | ✅ Working | Sends 6-digit reset code (dev returns code in response) |
+| POST /api/users/reset-password | ✅ Working | Code-based password reset flow |
+| POST /api/auth/reset-password | ⚠️ Different Flow | Token-based reset (not used by frontend) |
 
 ## 🚀 Next Steps
 
-1. **Fix reset password endpoint mismatch** - Update frontend to use `/api/users/reset-password`
-2. **Test refresh token flow** - Verify token refresh works with actual session
-3. **Test SSO flow** - If SAML/OAuth is configured, test full SSO flow
-4. **E2E testing** - Test full authentication flow from frontend UI
+1. ✅ **Fixed backend routing conflict** - forgotPasswordRoute now mounted at `/api/users`
+2. ✅ **Fixed database column mismatch** - SQL queries now use `reset_token` column
+3. ✅ **Deployed to dev** - Reset password flow tested and verified
+4. **Test refresh token flow** - Verify token refresh works with actual session expiry
+5. **Configure production environment**:
+   - Create production D1 database (`trade-nexus-db`)
+   - Configure production backend bindings in `wrangler.toml`
+   - Deploy backend to production
+   - Test full auth flow in production
+6. **E2E testing** - Test complete authentication flow from frontend UI
+7. **Test SSO flow** - If SAML/OAuth is configured, test full SSO flow
 
 ## 🔐 Security Notes
 
