@@ -43,6 +43,8 @@ export default function CalendarPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [schedules, setSchedules] = useState<MonthlySchedule[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedDay, setSelectedDay] = useState<DayInfo | null>(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
 
   useEffect(() => {
     fetchSchedules();
@@ -145,6 +147,13 @@ export default function CalendarPage() {
     return 1; // Default trading day
   };
 
+  const handleDayClick = (dayInfo: DayInfo) => {
+    if (dayInfo.isCurrentMonth) {
+      setSelectedDay(dayInfo);
+      setShowDetailModal(true);
+    }
+  };
+
   const days = getDaysInMonth();
 
   return (
@@ -214,12 +223,13 @@ export default function CalendarPage() {
                     return (
                       <div
                         key={index}
+                        onClick={() => handleDayClick(dayInfo)}
                         className={`aspect-square glass border rounded-lg p-1 sm:p-2 transition-all ${
                           dayInfo.isCurrentMonth
-                            ? typeConfig
+                            ? `cursor-pointer hover:scale-105 ${typeConfig
                               ? `${typeConfig.color} border`
-                              : 'border-white/10 hover:border-white/30'
-                            : 'border-white/5 opacity-40'
+                              : 'border-white/10 hover:border-white/30'}`
+                            : 'border-white/5 opacity-40 cursor-default'
                         } ${
                           isToday(dayInfo.date) ? 'ring-1 sm:ring-2 ring-blue-500' : ''
                         }`}
@@ -322,6 +332,157 @@ export default function CalendarPage() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Day Detail Modal */}
+        {showDetailModal && selectedDay && (
+          <div
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+            onClick={() => setShowDetailModal(false)}
+          >
+            <div
+              className="bg-slate-900 border border-purple-500/30 rounded-lg max-w-md w-full p-6 space-y-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="flex items-start justify-between">
+                <div>
+                  <h2 className="text-xl font-bold text-white">
+                    {selectedDay.date.toLocaleDateString('default', {
+                      weekday: 'long',
+                      month: 'long',
+                      day: 'numeric',
+                      year: 'numeric'
+                    })}
+                  </h2>
+                  {isToday(selectedDay.date) && (
+                    <span className="text-xs text-blue-400 font-medium">Today</span>
+                  )}
+                </div>
+                <button
+                  onClick={() => setShowDetailModal(false)}
+                  className="text-gray-400 hover:text-white transition-colors"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Day Type Badge */}
+              {(() => {
+                const lookupType = getLookupType(selectedDay.schedule);
+                const typeConfig = lookupType ? LOOKUP_TYPES[lookupType as keyof typeof LOOKUP_TYPES] : null;
+                return typeConfig ? (
+                  <div className={`inline-flex items-center px-3 py-1.5 rounded-lg border ${typeConfig.color}`}>
+                    <span className="text-sm font-medium">{typeConfig.label}</span>
+                  </div>
+                ) : (
+                  <div className="inline-flex items-center px-3 py-1.5 rounded-lg border border-gray-500/20 bg-gray-500/10 text-gray-400">
+                    <span className="text-sm font-medium">No Schedule Data</span>
+                  </div>
+                );
+              })()}
+
+              {/* Details */}
+              <div className="space-y-3">
+                {selectedDay.schedule ? (
+                  <>
+                    {/* Holiday Information */}
+                    {selectedDay.schedule.holiday_name && (
+                      <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20">
+                        <div className="text-xs text-gray-400 mb-1">Holiday</div>
+                        <div className="text-sm text-white font-medium">{selectedDay.schedule.holiday_name}</div>
+                      </div>
+                    )}
+
+                    {/* NYMEX Expiration */}
+                    {selectedDay.schedule.nymex_futures_contract_expiration === 1 && (
+                      <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                        <div className="text-xs text-gray-400 mb-1">Special Event</div>
+                        <div className="text-sm text-white font-medium">NYMEX Futures Contract Expiration</div>
+                        <div className="text-xs text-gray-400 mt-1">
+                          Typically the third business day before the end of the month for the near-month contract
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Bid Week Information */}
+                    {selectedDay.schedule.bid_week_day && selectedDay.schedule.bid_week_day >= 4 && (
+                      <div className="p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
+                        <div className="text-xs text-gray-400 mb-1">Bid Week</div>
+                        <div className="text-sm text-white font-medium">
+                          Bid Week Day {selectedDay.schedule.bid_week_day - 3}
+                        </div>
+                        <div className="text-xs text-gray-400 mt-1">
+                          Part of the monthly bidding period for natural gas pricing
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Bidweek Prices Published */}
+                    {selectedDay.schedule.bidweek_prices_published === 1 && (
+                      <div className="p-3 rounded-lg bg-purple-500/10 border border-purple-500/20">
+                        <div className="text-xs text-gray-400 mb-1">Price Publication</div>
+                        <div className="text-sm text-white font-medium">Bidweek Prices Published</div>
+                      </div>
+                    )}
+
+                    {/* Bidweek Deals Submitted */}
+                    {selectedDay.schedule.bidweek_deals_submitted === 1 && (
+                      <div className="p-3 rounded-lg bg-orange-500/10 border border-orange-500/20">
+                        <div className="text-xs text-gray-400 mb-1">Deal Submission</div>
+                        <div className="text-sm text-white font-medium">Bidweek Deals Submitted</div>
+                      </div>
+                    )}
+
+                    {/* Trading Day Status */}
+                    <div className="p-3 rounded-lg bg-white/5 border border-white/10">
+                      <div className="text-xs text-gray-400 mb-1">Trading Status</div>
+                      <div className="text-sm text-white">
+                        {selectedDay.schedule.lookup_id === 1 ? (
+                          <span className="text-green-400">Trading Day</span>
+                        ) : selectedDay.schedule.lookup_id === 2 ? (
+                          <span className="text-red-400">Market Holiday</span>
+                        ) : selectedDay.schedule.lookup_id === 3 ? (
+                          <span className="text-gray-400">Weekend</span>
+                        ) : (
+                          <span className="text-gray-400">Unknown Status</span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Show message if it's a regular day with no special events */}
+                    {!selectedDay.schedule.holiday_name &&
+                     selectedDay.schedule.nymex_futures_contract_expiration !== 1 &&
+                     !selectedDay.schedule.bid_week_day &&
+                     selectedDay.schedule.bidweek_prices_published !== 1 &&
+                     selectedDay.schedule.bidweek_deals_submitted !== 1 &&
+                     selectedDay.schedule.lookup_id === 1 && (
+                      <div className="text-center py-4 text-gray-400 text-sm">
+                        Regular trading day - no special events
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="text-center py-4 text-gray-400 text-sm">
+                    No schedule information available for this date
+                  </div>
+                )}
+              </div>
+
+              {/* Close Button */}
+              <div className="pt-2">
+                <Button
+                  onClick={() => setShowDetailModal(false)}
+                  className="w-full"
+                  variant="outline"
+                >
+                  Close
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </AuthGuard>
   );
