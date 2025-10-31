@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { authenticate, authorize } from '../middleware/auth';
+import { authenticate, requireRole } from '../middleware/auth';
 import {
   runQualityChecks,
   detectDuplicates,
@@ -184,7 +184,7 @@ dataQualityRoutes.get('/rules', authenticate, async (c) => {
  * Create new quality rule
  * Requires admin or compliance role
  */
-dataQualityRoutes.post('/rules', authenticate, authorize('admin', 'compliance', 'superadmin'), async (c) => {
+dataQualityRoutes.post('/rules', authenticate, requireRole('admin', 'compliance_officer', 'super_admin'), async (c) => {
   try {
     const body = await c.req.json();
 
@@ -242,7 +242,7 @@ dataQualityRoutes.post('/rules', authenticate, authorize('admin', 'compliance', 
  * Update quality rule
  * Requires admin or compliance role
  */
-dataQualityRoutes.put('/rules/:id', authenticate, authorize('admin', 'compliance', 'superadmin'), async (c) => {
+dataQualityRoutes.put('/rules/:id', authenticate, requireRole('admin', 'compliance_officer', 'super_admin'), async (c) => {
   try {
     const id = parseInt(c.req.param('id'));
     const body = await c.req.json();
@@ -297,7 +297,7 @@ dataQualityRoutes.put('/rules/:id', authenticate, authorize('admin', 'compliance
  * Delete quality rule
  * Requires admin or superadmin role
  */
-dataQualityRoutes.delete('/rules/:id', authenticate, authorize('admin', 'superadmin'), async (c) => {
+dataQualityRoutes.delete('/rules/:id', authenticate, requireRole('admin', 'super_admin'), async (c) => {
   try {
     const id = parseInt(c.req.param('id'));
 
@@ -325,7 +325,7 @@ dataQualityRoutes.delete('/rules/:id', authenticate, authorize('admin', 'superad
  * Manually trigger quality checks
  * Requires admin or compliance role
  */
-dataQualityRoutes.post('/run', authenticate, authorize('admin', 'compliance', 'superadmin'), async (c) => {
+dataQualityRoutes.post('/run', authenticate, requireRole('admin', 'compliance_officer', 'super_admin'), async (c) => {
   try {
     console.log('Running manual quality checks...');
 
@@ -386,7 +386,7 @@ dataQualityRoutes.get('/reconciliation', authenticate, async (c) => {
  * Run data reconciliation
  * Requires admin or compliance role
  */
-dataQualityRoutes.post('/reconciliation', authenticate, authorize('admin', 'compliance', 'superadmin'), async (c) => {
+dataQualityRoutes.post('/reconciliation', authenticate, requireRole('admin', 'compliance_officer', 'super_admin'), async (c) => {
   try {
     const body = await c.req.json();
     const { source_table, target_table, reconciliation_key } = body;
@@ -469,7 +469,7 @@ dataQualityRoutes.get('/lineage/:table/:id', authenticate, async (c) => {
  * Update issue status (resolve, ignore)
  * Requires admin or compliance role
  */
-dataQualityRoutes.put('/issues/:id', authenticate, authorize('admin', 'compliance', 'superadmin'), async (c) => {
+dataQualityRoutes.put('/issues/:id', authenticate, requireRole('admin', 'compliance_officer', 'super_admin'), async (c) => {
   try {
     const id = parseInt(c.req.param('id'));
     const body = await c.req.json();

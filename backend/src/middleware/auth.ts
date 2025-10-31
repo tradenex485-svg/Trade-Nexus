@@ -54,10 +54,17 @@ export async function authenticate(c: Context<{ Bindings: Bindings }>, next: Nex
  */
 export function authorize(...requiredPermissions: string[]) {
   return async (c: Context<{ Bindings: Bindings }>, next: Next) => {
-    const user = c.get('user') as TokenPayload | undefined;
+    const user = c.get('user') as any;
 
     if (!user) {
       return c.json({ success: false, error: 'Forbidden - No user context' }, 403);
+    }
+
+    // Get user's role (user can have role_id or roleId depending on source)
+    const roleId = user.role_id || user.roleId;
+
+    if (!roleId) {
+      return c.json({ success: false, error: 'Forbidden - No role information' }, 403);
     }
 
     // Get user's permissions
@@ -66,7 +73,7 @@ export function authorize(...requiredPermissions: string[]) {
       FROM permissions p
       JOIN role_permissions rp ON p.id = rp.permission_id
       WHERE rp.role_id = ?
-    `).bind(user.role_id).all();
+    `).bind(roleId).all();
 
     const userPermissions = permissions.results.map((p: any) => p.permission_name);
 
@@ -115,16 +122,23 @@ export async function optionalAuth(c: Context<{ Bindings: Bindings }>, next: Nex
  */
 export function requireRole(...allowedRoles: string[]) {
   return async (c: Context<{ Bindings: Bindings }>, next: Next) => {
-    const user = c.get('user') as TokenPayload | undefined;
+    const user = c.get('user') as any;
 
     if (!user) {
       return c.json({ success: false, error: 'Forbidden - No user context' }, 403);
     }
 
+    // Get user's role (user can have role_id or roleId depending on source)
+    const roleId = user.role_id || user.roleId;
+
+    if (!roleId) {
+      return c.json({ success: false, error: 'Forbidden - No role information' }, 403);
+    }
+
     // Get user's role
     const role = await c.env.DB.prepare(`
       SELECT role_name FROM roles WHERE id = ?
-    `).bind(user.roleId).first();
+    `).bind(roleId).first();
 
     if (!role || !allowedRoles.includes(role.role_name as string)) {
       return c.json({
