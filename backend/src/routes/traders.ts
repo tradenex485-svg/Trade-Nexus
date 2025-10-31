@@ -46,17 +46,19 @@ tradersRoutes.get('/', authenticate, async (c) => {
 
     let params: any[] = [traderId];
 
-    // Company Admin sees only their company's traders
-    if (user.roleId === companyAdminId) {
+    // Company Admin and Trader see only their company's traders
+    if (user.roleId === companyAdminId || user.roleId === traderId) {
       const userCompany = await c.env.DB.prepare(`
         SELECT company_id FROM users WHERE id = ?
       `).bind(user.userId).first<{ company_id: number }>();
 
       if (!userCompany?.company_id) {
+        // If user doesn't have a company, return empty list
         return c.json({
-          success: false,
-          error: 'User not assigned to a company',
-        }, 400);
+          success: true,
+          data: [],
+          count: 0,
+        });
       }
 
       query += ' AND u.company_id = ?';
@@ -86,6 +88,7 @@ tradersRoutes.get('/:id', authenticate, async (c) => {
     const id = parseInt(c.req.param('id'));
     const user = c.get('user');
     const companyAdminId = await getRoleId(c.env.DB, 'company_admin');
+    const traderId = await getRoleId(c.env.DB, 'trader');
 
     let query = `
       SELECT
@@ -107,8 +110,8 @@ tradersRoutes.get('/:id', authenticate, async (c) => {
       return c.json({ success: false, error: 'Trader not found' }, 404);
     }
 
-    // Company Admin can only view their company's traders
-    if (user.roleId === companyAdminId) {
+    // Company Admin and Trader can only view their company's traders
+    if (user.roleId === companyAdminId || user.roleId === traderId) {
       const userCompany = await c.env.DB.prepare(`
         SELECT company_id FROM users WHERE id = ?
       `).bind(user.userId).first<{ company_id: number }>();
@@ -239,7 +242,7 @@ tradersRoutes.post('/', authenticate, authorize('users.create'), async (c) => {
 });
 
 // Update trader
-tradersRoutes.put('/:id', authenticate, async (c) => {
+tradersRoutes.put('/:id', authenticate, authorize('users.update'), async (c) => {
   try {
     const id = parseInt(c.req.param('id'));
     const user = c.get('user');
