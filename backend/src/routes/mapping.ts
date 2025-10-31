@@ -1,9 +1,14 @@
 import { Hono } from 'hono';
+import { authenticate, authorize } from '../middleware/auth';
 
 export const mappingRoutes = new Hono();
 
-// Get all mappings
-mappingRoutes.get('/', async (c) => {
+/**
+ * GET /api/mapping
+ * Get all mappings
+ * Requires: position_limits.read permission
+ */
+mappingRoutes.get('/', authenticate, authorize('position_limits.read'), async (c) => {
   try {
     const result = await c.env.DB.prepare(`
       SELECT *
@@ -25,8 +30,12 @@ mappingRoutes.get('/', async (c) => {
   }
 });
 
-// Get single mapping by ID
-mappingRoutes.get('/:id', async (c) => {
+/**
+ * GET /api/mapping/:id
+ * Get single mapping by ID
+ * Requires: position_limits.read permission
+ */
+mappingRoutes.get('/:id', authenticate, authorize('position_limits.read'), async (c) => {
   try {
     const id = parseInt(c.req.param('id'));
 
@@ -55,8 +64,12 @@ mappingRoutes.get('/:id', async (c) => {
   }
 });
 
-// Create new mapping
-mappingRoutes.post('/', async (c) => {
+/**
+ * POST /api/mapping
+ * Create new mapping
+ * Requires: position_limits.write permission
+ */
+mappingRoutes.post('/', authenticate, authorize('position_limits.write'), async (c) => {
   try {
     const body = await c.req.json();
 
@@ -119,8 +132,12 @@ mappingRoutes.post('/', async (c) => {
   }
 });
 
-// Update mapping
-mappingRoutes.put('/:id', async (c) => {
+/**
+ * PUT /api/mapping/:id
+ * Update mapping
+ * Requires: position_limits.write permission
+ */
+mappingRoutes.put('/:id', authenticate, authorize('position_limits.write'), async (c) => {
   try {
     const id = parseInt(c.req.param('id'));
     const body = await c.req.json();
@@ -183,8 +200,12 @@ mappingRoutes.put('/:id', async (c) => {
   }
 });
 
-// Soft delete mapping
-mappingRoutes.delete('/:id', async (c) => {
+/**
+ * DELETE /api/mapping/:id
+ * Soft delete mapping
+ * Requires: position_limits.delete permission
+ */
+mappingRoutes.delete('/:id', authenticate, authorize('position_limits.delete'), async (c) => {
   try {
     const id = parseInt(c.req.param('id'));
 
@@ -223,8 +244,12 @@ mappingRoutes.delete('/:id', async (c) => {
   }
 });
 
-// Get mappings by commodity code
-mappingRoutes.get('/commodity/:code', async (c) => {
+/**
+ * GET /api/mapping/commodity/:code
+ * Get mappings by commodity code
+ * Requires: position_limits.read permission
+ */
+mappingRoutes.get('/commodity/:code', authenticate, authorize('position_limits.read'), async (c) => {
   try {
     const code = c.req.param('code');
 
@@ -248,8 +273,12 @@ mappingRoutes.get('/commodity/:code', async (c) => {
   }
 });
 
-// Get mappings by market location
-mappingRoutes.get('/market/:location', async (c) => {
+/**
+ * GET /api/mapping/market/:location
+ * Get mappings by market location
+ * Requires: position_limits.read permission
+ */
+mappingRoutes.get('/market/:location', authenticate, authorize('position_limits.read'), async (c) => {
   try {
     const location = c.req.param('location');
 
