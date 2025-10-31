@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useAuthStore } from '@/store/auth-store';
 import { useRouter } from 'next/navigation';
 import { AuthGuard } from '@/components/auth/auth-guard';
-import { tradersApi } from '@/lib/api';
+import { tradersApi, companiesApi } from '@/lib/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,6 +12,12 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Plus, Users, Building, Search, Edit, Trash2, Loader2 } from 'lucide-react';
+
+interface Company {
+  id: number;
+  company_name: string;
+  company_code: string;
+}
 
 interface Trader {
   id: number;
@@ -34,6 +40,7 @@ export default function TradersPage() {
   const router = useRouter();
   const [traders, setTraders] = useState<Trader[]>([]);
   const [filteredTraders, setFilteredTraders] = useState<Trader[]>([]);
+  const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -45,6 +52,7 @@ export default function TradersPage() {
     trader_code: '',
     department: '',
     desk_name: '',
+    company_id: '',
   });
 
   useEffect(() => {
@@ -52,7 +60,12 @@ export default function TradersPage() {
     if (!_hasHydrated || !token) return;
 
     fetchTraders();
-  }, [_hasHydrated, token]);
+
+    // Fetch companies if super admin
+    if (user?.role === 'super_admin') {
+      fetchCompanies();
+    }
+  }, [_hasHydrated, token, user]);
 
   useEffect(() => {
     // Filter traders based on search query
@@ -64,9 +77,9 @@ export default function TradersPage() {
         (trader) =>
           trader.name.toLowerCase().includes(query) ||
           trader.email.toLowerCase().includes(query) ||
-          trader.company_name.toLowerCase().includes(query) ||
-          trader.trader_code?.toLowerCase().includes(query) ||
-          trader.department?.toLowerCase().includes(query)
+          (trader.company_name && trader.company_name.toLowerCase().includes(query)) ||
+          (trader.trader_code && trader.trader_code.toLowerCase().includes(query)) ||
+          (trader.department && trader.department.toLowerCase().includes(query))
       );
       setFilteredTraders(filtered);
     }
@@ -84,12 +97,35 @@ export default function TradersPage() {
     }
   };
 
+  const fetchCompanies = async () => {
+    try {
+      const data = await companiesApi.getAll();
+      setCompanies(data.data || []);
+    } catch (err: any) {
+      console.error('Failed to fetch companies:', err);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
     try {
-      await tradersApi.create(formData);
+      const payload: any = {
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
+        trader_code: formData.trader_code,
+        department: formData.department,
+        desk_name: formData.desk_name,
+      };
+
+      // Add company_id if super admin and it's selected
+      if (isSuperAdmin && formData.company_id) {
+        payload.company_id = parseInt(formData.company_id);
+      }
+
+      await tradersApi.create(payload);
 
       setShowForm(false);
       setFormData({
@@ -99,6 +135,7 @@ export default function TradersPage() {
         trader_code: '',
         department: '',
         desk_name: '',
+        company_id: '',
       });
       fetchTraders();
     } catch (err: any) {
@@ -118,6 +155,9 @@ export default function TradersPage() {
   };
 
   const isSuperAdmin = user?.role === 'super_admin';
+  const canCreate = user?.permissions?.includes('users.create');
+  const canUpdate = user?.permissions?.includes('users.update');
+  const canDelete = user?.permissions?.includes('users.delete');
 
   // Show loading during hydration or data fetch
   if (!_hasHydrated || loading) {
@@ -160,10 +200,12 @@ export default function TradersPage() {
             className="pl-10"
           />
         </div>
-        <Button onClick={() => setShowForm(!showForm)} className="flex items-center gap-2">
-          <Plus className="h-4 w-4" />
-          Add Trader
-        </Button>
+        {canCreate && (
+          <Button onClick={() => setShowForm(!showForm)} className="flex items-center gap-2">
+            <Plus className="h-4 w-4" />
+            Add Trader
+          </Button>
+        )}
       </div>
 
       {showForm && (
@@ -234,6 +276,24 @@ export default function TradersPage() {
                     placeholder="Energy Desk"
                   />
                 </div>
+                {isSuperAdmin && (
+                  <div>
+                    <Label htmlFor="company_id">Company</Label>
+                    <select
+                      id="company_id"
+                      value={formData.company_id}
+                      onChange={(e) => setFormData({ ...formData, company_id: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">Select a company (optional)</option>
+                      {companies.map((company) => (
+                        <option key={company.id} value={company.id}>
+                          {company.company_name} ({company.company_code})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
               </div>
               <div className="flex gap-2">
                 <Button type="submit">Create Trader</Button>
@@ -298,25 +358,31 @@ export default function TradersPage() {
                       Primary
                     </Badge>
                   )}
-                  <div className="flex gap-2 mt-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => router.push(`/admin/traders/${trader.id}`)}
-                    >
-                      <Edit className="h-4 w-4 mr-1" />
-                      Edit
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDelete(trader.id)}
-                      className="text-red-600 hover:text-red-700"
-                    >
-                      <Trash2 className="h-4 w-4 mr-1" />
-                      Delete
-                    </Button>
-                  </div>
+                  {(canUpdate || canDelete) && (
+                    <div className="flex gap-2 mt-2">
+                      {canUpdate && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => router.push(`/admin/traders/${trader.id}`)}
+                        >
+                          <Edit className="h-4 w-4 mr-1" />
+                          Edit
+                        </Button>
+                      )}
+                      {canDelete && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDelete(trader.id)}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          <Trash2 className="h-4 w-4 mr-1" />
+                          Delete
+                        </Button>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </CardContent>

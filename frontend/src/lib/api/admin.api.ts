@@ -90,6 +90,10 @@ export const tradersApi = {
     return apiFetch<{ data: any[] }>('/api/traders');
   },
 
+  getById: (id: number) => {
+    return apiFetch<{ success: boolean; trader: any; assignments: any[] }>(`/api/traders/${id}`);
+  },
+
   create: (data: {
     name: string;
     email: string;
@@ -97,6 +101,7 @@ export const tradersApi = {
     trader_code?: string;
     department?: string;
     desk_name?: string;
+    company_id?: number;
   }) => {
     return apiFetch<{ success: boolean; message: string; id: number }>('/api/traders', {
       method: 'POST',
