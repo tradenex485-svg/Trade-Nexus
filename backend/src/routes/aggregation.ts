@@ -21,8 +21,9 @@ const app = new Hono();
 /**
  * GET /api/aggregation/groups
  * Get all aggregation groups
+ * Requires: position_limits.read permission
  */
-app.get('/groups', authenticate, async (c) => {
+app.get('/groups', authenticate, authorize('position_limits.read'), async (c) => {
   try {
     const groups = await getAggregationGroups(c.env.DB);
 
@@ -44,8 +45,9 @@ app.get('/groups', authenticate, async (c) => {
 /**
  * GET /api/aggregation/groups/:id/members
  * Get members of a specific aggregation group
+ * Requires: position_limits.read permission
  */
-app.get('/groups/:id/members', authenticate, async (c) => {
+app.get('/groups/:id/members', authenticate, authorize('position_limits.read'), async (c) => {
   try {
     const groupId = parseInt(c.req.param('id'));
     const members = await getGroupMembers(c.env.DB, groupId);
@@ -68,8 +70,9 @@ app.get('/groups/:id/members', authenticate, async (c) => {
 /**
  * GET /api/aggregation/positions
  * Get aggregated positions with filtering
+ * Requires: position_limits.read permission
  */
-app.get('/positions', authenticate, async (c) => {
+app.get('/positions', authenticate, authorize('position_limits.read'), async (c) => {
   try {
     const user = c.get('user');
     const groupCode = c.req.query('group_code');
@@ -100,8 +103,9 @@ app.get('/positions', authenticate, async (c) => {
 /**
  * POST /api/aggregation/calculate
  * Trigger aggregation calculation
+ * Requires: position_limits.override permission (admins/compliance)
  */
-app.post('/calculate', authenticate, async (c) => {
+app.post('/calculate', authenticate, authorize('position_limits.override'), async (c) => {
   try {
     const user = c.get('user');
     const { company_id, calculation_type } = await c.req.json().catch(() => ({}));
@@ -151,8 +155,9 @@ app.post('/calculate', authenticate, async (c) => {
 /**
  * POST /api/aggregation/equivalence
  * Calculate economic equivalence between two commodities
+ * Requires: position_limits.read permission
  */
-app.post('/equivalence', authenticate, async (c) => {
+app.post('/equivalence', authenticate, authorize('position_limits.read'), async (c) => {
   try {
     const { commodity_a, commodity_b, position_a } = await c.req.json();
 
@@ -193,8 +198,9 @@ app.post('/equivalence', authenticate, async (c) => {
 /**
  * POST /api/aggregation/spread-netting
  * Check if spread positions can be netted
+ * Requires: position_limits.read permission
  */
-app.post('/spread-netting', authenticate, async (c) => {
+app.post('/spread-netting', authenticate, authorize('position_limits.read'), async (c) => {
   try {
     const { commodity_a, commodity_b, position_a, position_b } = await c.req.json();
 
@@ -230,8 +236,9 @@ app.post('/spread-netting', authenticate, async (c) => {
 /**
  * GET /api/aggregation/relationships/:commodity
  * Get commodity relationships for a specific commodity
+ * Requires: position_limits.read permission
  */
-app.get('/relationships/:commodity', authenticate, async (c) => {
+app.get('/relationships/:commodity', authenticate, authorize('position_limits.read'), async (c) => {
   try {
     const commodityCode = c.req.param('commodity');
     const relationships = await getCommodityRelationships(c.env.DB, commodityCode);
@@ -254,8 +261,9 @@ app.get('/relationships/:commodity', authenticate, async (c) => {
 /**
  * GET /api/aggregation/stats
  * Get aggregation statistics
+ * Requires: position_limits.read permission
  */
-app.get('/stats', authenticate, async (c) => {
+app.get('/stats', authenticate, authorize('position_limits.read'), async (c) => {
   try {
     const stats = await c.env.DB.prepare(`
       SELECT
