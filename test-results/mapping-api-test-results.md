@@ -349,8 +349,9 @@ CREATE INDEX IF NOT EXISTS idx_mapping_commodity_code ON mapping(commodity_code)
 ## Frontend Implementation
 
 ### Location
-- **File:** `/mnt/e/trade-nexus-app/frontend/src/app/mapping/page.tsx`
+- **Integrated into:** `/mnt/e/trade-nexus-app/frontend/src/app/data-quality/page.tsx` (Mapping Tab)
 - **API Client:** `/mnt/e/trade-nexus-app/frontend/src/lib/api/mapping.api.ts`
+- **Navigation:** Data Quality → Mapping tab
 
 ### Features
 
@@ -403,10 +404,10 @@ CREATE INDEX IF NOT EXISTS idx_mapping_commodity_code ON mapping(commodity_code)
 
 ### Frontend
 - **Environment:** Dev branch
-- **URL:** https://dev.trade-nexus-frontend-a3d.pages.dev/mapping
+- **URL:** https://dev.trade-nexus-frontend-a3d.pages.dev/data-quality (Mapping tab)
 - **Status:** ✅ Deployed successfully
-- **Build Time:** 3.9s
-- **Page Size:** 9.85 kB + 250 kB First Load JS
+- **Integration:** Part of Data Quality page
+- **Page Size:** Included in Data Quality page bundle
 
 ---
 
@@ -416,8 +417,9 @@ CREATE INDEX IF NOT EXISTS idx_mapping_commodity_code ON mapping(commodity_code)
 
 1. **Access the UI:**
    ```
-   https://dev.trade-nexus-frontend-a3d.pages.dev/mapping
+   https://dev.trade-nexus-frontend-a3d.pages.dev/data-quality
    ```
+   Then click on the **Mapping** tab.
 
 2. **Login with appropriate credentials:**
    - Trader: `trader@nexus.com` (read-only access)
@@ -523,10 +525,14 @@ The following issues have been fixed:
 
 ### Frontend
 - `/mnt/e/trade-nexus-app/frontend/src/lib/api/mapping.api.ts` - **NEW** API client
-- `/mnt/e/trade-nexus-app/frontend/src/app/mapping/page.tsx` - **NEW** UI component
+- `/mnt/e/trade-nexus-app/frontend/src/app/data-quality/page.tsx` - **UPDATED** Added Mapping tab with full CRUD functionality
 
 ### Documentation
 - `/mnt/e/trade-nexus-app/test-results/mapping-api-test-results.md` - **NEW** Test documentation
+
+### Notes
+- Mapping functionality is now integrated into the Data Quality page as a tab, making it easier to manage data-related features in one place
+- The standalone mapping page has been removed to maintain better organization
 
 ---
 
