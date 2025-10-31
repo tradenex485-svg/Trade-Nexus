@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { AuthGuard } from '@/components/auth/auth-guard';
 import { useAuthStore } from '@/store/auth-store';
-import { dataQualityApi } from '@/lib/api';
+import { dataQualityApi, csvImportApi } from '@/lib/api';
 import { mappingApi, type Mapping, type CreateMappingPayload } from '@/lib/api/mapping.api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -70,6 +70,13 @@ export default function DataQualityPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
+
+  // CSV Import state
+  const [importType, setImportType] = useState<'transactions' | 'power-data'>('transactions');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [importing, setImporting] = useState(false);
+  const [importSuccess, setImportSuccess] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Filters
   const [issueFilter, setIssueFilter] = useState({ status: 'open', severity: '', issue_type: '' });
@@ -368,6 +375,57 @@ export default function DataQualityPage() {
     return 'text-red-500';
   };
 
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      if (!file.name.endsWith('.csv')) {
+        setError('Please select a CSV file');
+        return;
+      }
+      setSelectedFile(file);
+      setImportSuccess(null);
+      setError(null);
+    }
+  };
+
+  const handleCsvImport = async () => {
+    if (!selectedFile) {
+      setError('Please select a file to import');
+      return;
+    }
+
+    try {
+      setImporting(true);
+      setError(null);
+      setImportSuccess(null);
+
+      let result;
+      if (importType === 'transactions') {
+        result = await csvImportApi.importTransactions(selectedFile);
+      } else {
+        result = await csvImportApi.importPowerData(selectedFile);
+      }
+
+      setImportSuccess(result.message);
+      setSelectedFile(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+
+      // Refresh uploads list
+      if (activeTab === 'uploads') {
+        await loadUploads();
+      }
+
+      // Switch to uploads tab to show result
+      setActiveTab('uploads');
+    } catch (err: any) {
+      setError(err.message || 'Import failed');
+    } finally {
+      setImporting(false);
+    }
+  };
+
   if (loading) {
     return (
       <AuthGuard>
@@ -458,6 +516,7 @@ export default function DataQualityPage() {
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
             <TabsList className="bg-slate-900/50 border border-slate-700 flex-wrap h-auto">
               <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+              <TabsTrigger value="csv-import">CSV Import</TabsTrigger>
               <TabsTrigger value="issues">Issues</TabsTrigger>
               <TabsTrigger value="rules">Quality Rules</TabsTrigger>
               <TabsTrigger value="uploads">File Uploads</TabsTrigger>
@@ -572,6 +631,127 @@ export default function DataQualityPage() {
                   </CardContent>
                 </Card>
               </div>
+            </TabsContent>
+
+            {/* CSV Import Tab */}
+            <TabsContent value="csv-import" className="space-y-6">
+              <Card className="bg-slate-900/50 border-slate-700">
+                <CardHeader>
+                  <CardTitle className="text-white">CSV Data Import</CardTitle>
+                  <CardDescription className="text-slate-400">
+                    Import transaction or power data from CSV files
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {/* Import Type Selection */}
+                  <div>
+                    <Label className="text-slate-300 mb-3 block">Select Import Type</Label>
+                    <div className="flex gap-4">
+                      <Button
+                        variant={importType === 'transactions' ? 'default' : 'outline'}
+                        onClick={() => setImportType('transactions')}
+                        className={importType === 'transactions' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-slate-800 border-slate-600'}
+                      >
+                        Transactions
+                      </Button>
+                      <Button
+                        variant={importType === 'power-data' ? 'default' : 'outline'}
+                        onClick={() => setImportType('power-data')}
+                        className={importType === 'power-data' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-slate-800 border-slate-600'}
+                      >
+                        Power Data
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* File Upload */}
+                  <div>
+                    <Label htmlFor="csv-file" className="text-slate-300 mb-2 block">
+                      Select CSV File
+                    </Label>
+                    <input
+                      ref={fileInputRef}
+                      id="csv-file"
+                      type="file"
+                      accept=".csv"
+                      onChange={handleFileSelect}
+                      className="block w-full text-sm text-slate-400
+                        file:mr-4 file:py-2 file:px-4
+                        file:rounded-lg file:border-0
+                        file:text-sm file:font-semibold
+                        file:bg-blue-600 file:text-white
+                        hover:file:bg-blue-700
+                        file:cursor-pointer cursor-pointer"
+                    />
+                    {selectedFile && (
+                      <p className="mt-2 text-sm text-green-400">
+                        Selected: {selectedFile.name} ({(selectedFile.size / 1024).toFixed(2)} KB)
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Expected Format Info */}
+                  <div className="bg-slate-800/50 p-4 rounded-lg border border-slate-700">
+                    <h4 className="text-white font-semibold mb-2">
+                      {importType === 'transactions' ? 'Transaction CSV Format' : 'Power Data CSV Format'}
+                    </h4>
+                    <p className="text-sm text-slate-400 mb-2">Required columns:</p>
+                    {importType === 'transactions' ? (
+                      <ul className="text-sm text-slate-300 space-y-1">
+                        <li>• <strong>market_location</strong> (required)</li>
+                        <li>• <strong>contract_month</strong> (required)</li>
+                        <li>• <strong>base_delta_notnl_nd</strong> (required)</li>
+                        <li>• <strong>trade_date</strong> (required)</li>
+                        <li>• index_uom (optional)</li>
+                        <li>• status (optional)</li>
+                        <li>• frequency (optional)</li>
+                        <li>• exchange (optional)</li>
+                      </ul>
+                    ) : (
+                      <ul className="text-sm text-slate-300 space-y-1">
+                        <li>• <strong>exchange_product_code</strong> (required)</li>
+                        <li>• <strong>contract_month</strong> (required)</li>
+                        <li>• net_position (optional)</li>
+                        <li>• base_delta_notnl_nd (optional)</li>
+                        <li>• base_delta_notnl (optional)</li>
+                        <li>• product_description (optional)</li>
+                        <li>• commodity (optional)</li>
+                        <li>• index_uom (optional)</li>
+                        <li>• trading_date (optional)</li>
+                        <li>• status (optional)</li>
+                        <li>• trans_type (optional)</li>
+                      </ul>
+                    )}
+                  </div>
+
+                  {/* Import Button */}
+                  <Button
+                    onClick={handleCsvImport}
+                    disabled={!selectedFile || importing}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    {importing ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        Importing...
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="h-4 w-4 mr-2" />
+                        Import {importType === 'transactions' ? 'Transactions' : 'Power Data'}
+                      </>
+                    )}
+                  </Button>
+
+                  {/* Success/Error Messages */}
+                  {importSuccess && (
+                    <Alert className="bg-green-900/20 border-green-500/50">
+                      <CheckCircle2 className="h-4 w-4 text-green-500" />
+                      <AlertDescription className="text-green-200">{importSuccess}</AlertDescription>
+                    </Alert>
+                  )}
+                </CardContent>
+              </Card>
             </TabsContent>
 
             {/* Issues Tab */}

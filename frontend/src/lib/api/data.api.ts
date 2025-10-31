@@ -1,9 +1,11 @@
 /**
  * Data Import & Aggregation API
- * Handles ICE data import and position aggregation
+ * Handles ICE data import, CSV import, and position aggregation
  */
 
 import { apiFetch } from './client';
+import { useAuthStore } from '@/store/auth-store';
+import { API_BASE_URL } from './client';
 
 // Data Import API
 export const dataImportApi = {
@@ -80,5 +82,66 @@ export const aggregationApi = {
 
   getStats: () => {
     return apiFetch<{ success: boolean; data: any }>('/api/aggregation/stats');
+  },
+};
+
+// CSV Import API
+export const csvImportApi = {
+  importTransactions: async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const token = useAuthStore.getState().token;
+    const response = await fetch(`${API_BASE_URL}/api/csv-import/transactions`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+      body: formData,
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: 'Request failed' }));
+      throw new Error(error.message || error.error || 'Transaction import failed');
+    }
+
+    return response.json() as Promise<{
+      success: boolean;
+      message: string;
+      inserted: number;
+      skipped: number;
+      upload_id: number;
+      validation_errors: string[];
+    }>;
+  },
+
+  importPowerData: async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const token = useAuthStore.getState().token;
+    const response = await fetch(`${API_BASE_URL}/api/csv-import/power-data`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+      body: formData,
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: 'Request failed' }));
+      throw new Error(error.message || error.error || 'Power data import failed');
+    }
+
+    return response.json() as Promise<{
+      success: boolean;
+      message: string;
+      inserted: number;
+      skipped: number;
+      upload_id: number;
+      validation_errors: string[];
+    }>;
   },
 };

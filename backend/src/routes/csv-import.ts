@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { requireAuth } from '../middleware/auth';
 import {
   validateTransaction,
   validateFileSize,
@@ -15,6 +16,9 @@ type Bindings = {
 };
 
 export const csvImportRoutes = new Hono<{ Bindings: Bindings }>();
+
+// Apply authentication to all CSV import routes
+csvImportRoutes.use('*', requireAuth);
 
 // Helper function to parse CSV
 function parseCSV(csvText: string): any[] {
@@ -74,19 +78,23 @@ csvImportRoutes.post('/transactions', async (c) => {
       }, 400);
     }
 
+    // Get user from context
+    const user = c.get('user') as any;
+
     // Create file upload record
     const uploadResult = await c.env.DB.prepare(`
       INSERT INTO file_uploads (
         file_name, file_type, file_size, target_table,
-        upload_status, total_rows
-      ) VALUES (?, ?, ?, ?, ?, ?)
+        upload_status, total_rows, uploaded_by
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)
     `).bind(
       file.name,
       'csv',
       file.size,
       'transactions',
       'processing',
-      0
+      0,
+      user?.id || null
     ).run();
 
     uploadId = Number(uploadResult.meta.last_row_id);
@@ -317,19 +325,23 @@ csvImportRoutes.post('/power-data', async (c) => {
       }, 400);
     }
 
+    // Get user from context
+    const user = c.get('user') as any;
+
     // Create file upload record
     const uploadResult = await c.env.DB.prepare(`
       INSERT INTO file_uploads (
         file_name, file_type, file_size, target_table,
-        upload_status, total_rows
-      ) VALUES (?, ?, ?, ?, ?, ?)
+        upload_status, total_rows, uploaded_by
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)
     `).bind(
       file.name,
       'csv',
       file.size,
       'power_data',
       'processing',
-      0
+      0,
+      user?.id || null
     ).run();
 
     uploadId = Number(uploadResult.meta.last_row_id);

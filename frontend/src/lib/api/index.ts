@@ -45,7 +45,7 @@ export { financialApi } from './financial.api';
 export { securityApi, auditTrailApi, exceptionsApi } from './security.api';
 
 // Export Data Import & Aggregation
-export { dataImportApi, aggregationApi } from './data.api';
+export { dataImportApi, aggregationApi, csvImportApi } from './data.api';
 
 // Export CFTC
 export { monthlySchedulesApi, bidWeekApi, preTradeValidationApi } from './cftc.api';

@@ -1,0 +1,6 @@
+market_location,contract_month,base_delta_notnl_nd,index_uom,trade_date,status,frequency,exchange
+HH,2025-02-01,1500.50,MMBtu,2025-01-15,1,0,NYMEX
+HH,2025-03-01,2300.75,MMBtu,2025-01-15,1,0,NYMEX
+SOCAL,2025-02-01,-800.25,MMBtu,2025-01-16,1,0,ICE
+TETCO_M3,2025-04-01,1200.00,MMBtu,2025-01-16,1,0,ICE
+PJM_WEST,2025-02-01,500.50,MWh,2025-01-17,1,0,NYMEX

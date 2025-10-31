@@ -1,0 +1,5 @@
+exchange_product_code,contract_month,net_position,base_delta_notnl_nd,base_delta_notnl,product_description,commodity,index_uom,trading_date,status,trans_type
+PWR_PJM_FEB25,2025-02-01,150,1500.50,1500.50,PJM West Hub Feb 2025,Power,MWh,2025-01-15,1,1
+PWR_ERCOT_MAR25,2025-03-01,-200,-2000.00,-2000.00,ERCOT North Hub Mar 2025,Power,MWh,2025-01-15,1,1
+GAS_HH_FEB25,2025-02-01,300,3000.75,3000.75,Henry Hub Feb 2025,Gas,MMBtu,2025-01-16,1,1
+GAS_SOCAL_MAR25,2025-03-01,450,4500.25,4500.25,SoCal Gas Mar 2025,Gas,MMBtu,2025-01-16,1,1
