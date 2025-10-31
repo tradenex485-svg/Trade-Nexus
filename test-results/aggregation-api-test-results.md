@@ -368,28 +368,59 @@ Content-Type: application/json
 
 **Location:** `/mnt/e/trade-nexus-app/frontend/src/app/aggregation/page.tsx`
 
-**Features Implemented:**
+**Enhanced Features Implemented (Updated: October 30, 2025):**
 - ✅ Dashboard overview with stats cards
-- ✅ Aggregated positions table with status indicators
-- ✅ Aggregation groups grid display
+- ✅ **4 Tabbed Interface**: Positions, Groups, Relationships, Tools
+- ✅ **Aggregated Positions Tab**: Table with status indicators and utilization percentages
+- ✅ **Groups Tab with Expandable Members**: Click to view group commodities with conversion factors
+- ✅ **Relationships Tab**: Search and view commodity relationships (spreads, hedges, correlations)
+- ✅ **Tools Tab**: Economic Equivalence Calculator and Spread Netting Checker
 - ✅ Refresh and calculate buttons
-- ✅ Mobile responsive design
+- ✅ Mobile responsive design with flex-wrap tabs
 - ✅ Authentication guard
 - ✅ Real-time data loading from API
+- ✅ Interactive UI with loading states for all async operations
 
-**API Calls Verified:**
-- ✅ `aggregationApi.getGroups()` - Fetches aggregation groups
-- ✅ `aggregationApi.getPositions()` - Fetches aggregated positions
-- ✅ `aggregationApi.getStats()` - Fetches statistics
-- ✅ `aggregationApi.calculate()` - Triggers aggregation calculation
-- ✅ `aggregationApi.getGroupMembers(groupId)` - Available in API client
-- ✅ `aggregationApi.getCommodityRelationships(commodityCode)` - Available in API client
-- ✅ `aggregationApi.calculateEquivalence()` - Available in API client
-- ✅ `aggregationApi.checkSpreadNetting()` - Available in API client
+**API Calls Implemented (All 8 Endpoints Now Used):**
+- ✅ `aggregationApi.getGroups()` - Fetches aggregation groups (line 127)
+- ✅ `aggregationApi.getPositions()` - Fetches aggregated positions (line 128)
+- ✅ `aggregationApi.getStats()` - Fetches statistics (line 129)
+- ✅ `aggregationApi.calculate()` - Triggers aggregation calculation (line 230)
+- ✅ `aggregationApi.getGroupMembers(groupId)` - **NEW** Fetches group members (line 151)
+- ✅ `aggregationApi.getCommodityRelationships(commodityCode)` - **NEW** Fetches relationships (line 168)
+- ✅ `aggregationApi.calculateEquivalence()` - **NEW** Economic equivalence calculator (line 187)
+- ✅ `aggregationApi.checkSpreadNetting()` - **NEW** Spread netting checker (line 210)
+
+**New Interactive Features:**
+
+1. **Group Members Viewer** (Lines 142-161)
+   - Click chevron button to expand/collapse group details
+   - Displays commodity codes, conversion factors, weights, and primary indicators
+   - Lazy loading: members fetched on first click, cached thereafter
+   - Loading spinner during fetch
+
+2. **Commodity Relationships Viewer** (Lines 163-177)
+   - Search by commodity code (e.g., CL, NG, GC)
+   - Displays relationship type badges (spread, substitute, hedge, correlated)
+   - Shows correlation coefficients, netting eligibility, exemption status
+   - Rich descriptions for each relationship
+
+3. **Economic Equivalence Calculator** (Lines 179-200)
+   - Input: Commodity A, Commodity B, Position in A
+   - Output: Equivalent position in B with conversion rate
+   - Real-time calculation using aggregation group conversion factors
+   - Visual result card with formatted numbers
+
+4. **Spread Netting Checker** (Lines 202-224)
+   - Input: Two commodities with their positions
+   - Output: Netting eligibility status and netted position
+   - Color-coded results (green for eligible, red for not eligible)
+   - Shows relationship details and description
 
 **Deployment:**
 - Frontend deployed to: https://dev.trade-nexus-frontend-a3d.pages.dev
 - Backend deployed to: https://trade-nexus-api-dev.tradenex485.workers.dev
+- **Latest deployment**: https://270fd872.trade-nexus-frontend-a3d.pages.dev
 
 ---
 
@@ -539,9 +570,16 @@ Authorization: Bearer [TRADER_TOKEN]
 | Authorization | 3 | 3 | 0 | 100% |
 | GET Endpoints | 4 | 4 | 0 | 100% |
 | POST Endpoints | 3 | 3 | 0 | 100% |
-| Frontend Integration | 8 | 8 | 0 | 100% |
+| Frontend Integration (Basic) | 5 | 5 | 0 | 100% |
+| **Frontend Integration (Enhanced)** | **4** | **4** | **0** | **100%** |
 | Security Tests | 2 | 2 | 0 | 100% |
-| **TOTAL** | **25** | **25** | **0** | **100%** |
+| **TOTAL** | **26** | **26** | **0** | **100%** |
+
+**Enhanced Frontend Features (October 30, 2025 Update):**
+- ✅ Group Members Expandable Viewer
+- ✅ Commodity Relationships Search & Display
+- ✅ Economic Equivalence Calculator Tool
+- ✅ Spread Netting Checker Tool
 
 ---
 
