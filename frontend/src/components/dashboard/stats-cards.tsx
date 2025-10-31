@@ -72,7 +72,13 @@ export function StatsCards({ overview, trending }: StatsCardsProps) {
                     </button>
                   </InfoTooltipTrigger>
                   <InfoTooltipContent>
-                    <p className="max-w-xs">Total number of active position limits being tracked across all markets and commodities</p>
+                    <div className="max-w-xs space-y-2">
+                      <p className="font-semibold text-white">Total Active Positions</p>
+                      <p>Number of position limits currently being tracked across all markets and commodities.</p>
+                      <p className="text-xs text-slate-300 mt-2">
+                        <strong>Calculation:</strong> COUNT of records in limit_calculations where is_active = 1
+                      </p>
+                    </div>
                   </InfoTooltipContent>
                 </InfoTooltip>
               </div>
@@ -116,7 +122,16 @@ export function StatsCards({ overview, trending }: StatsCardsProps) {
                     </button>
                   </InfoTooltipTrigger>
                   <InfoTooltipContent>
-                    <p className="max-w-xs">Average utilization percentage across all positions. Calculated as (Current Position / Position Limit) × 100</p>
+                    <div className="max-w-xs space-y-2">
+                      <p className="font-semibold text-white">Average Utilization</p>
+                      <p>The mean utilization percentage across all active positions.</p>
+                      <p className="text-xs text-slate-300 mt-2">
+                        <strong>Calculation:</strong> AVG(pos_pct) where pos_pct = (pos_lots / limit_lots) × 100
+                      </p>
+                      <p className="text-xs text-slate-400 mt-1">
+                        Higher percentages indicate positions closer to their regulatory limits.
+                      </p>
+                    </div>
                   </InfoTooltipContent>
                 </InfoTooltip>
               </div>
@@ -163,7 +178,16 @@ export function StatsCards({ overview, trending }: StatsCardsProps) {
                     </button>
                   </InfoTooltipTrigger>
                   <InfoTooltipContent>
-                    <p className="max-w-xs">Number of unread alerts requiring attention, including limit breaches and high-risk positions</p>
+                    <div className="max-w-xs space-y-2">
+                      <p className="font-semibold text-white">Unread Alerts</p>
+                      <p>Number of unread system alerts requiring your attention.</p>
+                      <p className="text-xs text-slate-300 mt-2">
+                        <strong>Calculation:</strong> COUNT of alerts where read = 0
+                      </p>
+                      <p className="text-xs text-slate-400 mt-1">
+                        Includes threshold breaches, approaching limits (≥70%), validation warnings, and system notifications.
+                      </p>
+                    </div>
                   </InfoTooltipContent>
                 </InfoTooltip>
               </div>
@@ -186,7 +210,7 @@ export function StatsCards({ overview, trending }: StatsCardsProps) {
           </CardContent>
         </Card>
 
-        {/* Breached Card */}
+        {/* Over Limit Card */}
         <Card
           className="border-slate-700 bg-slate-800/50 backdrop-blur cursor-pointer transition-all hover:scale-105 hover:shadow-lg hover:shadow-red-500/20"
           onClick={() => router.push('/limits?prioritization=Breached')}
@@ -195,7 +219,7 @@ export function StatsCards({ overview, trending }: StatsCardsProps) {
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <div>
-                  <p className="text-sm text-slate-400 mb-1">Breached</p>
+                  <p className="text-sm text-slate-400 mb-1">Over Limit</p>
                   <p className="text-3xl font-bold text-red-400">
                     {overview.by_prioritization.Breached}
                   </p>
@@ -210,7 +234,16 @@ export function StatsCards({ overview, trending }: StatsCardsProps) {
                     </button>
                   </InfoTooltipTrigger>
                   <InfoTooltipContent>
-                    <p className="max-w-xs">Positions that have exceeded their regulatory limits (≥100% utilization) and require immediate action</p>
+                    <div className="max-w-xs space-y-2">
+                      <p className="font-semibold text-white">Currently Over Limit</p>
+                      <p>Number of positions that currently exceed their regulatory position limits.</p>
+                      <p className="text-xs text-slate-300 mt-2">
+                        <strong>Calculation:</strong> COUNT of positions where prioritization = 'Breached' (pos_pct ≥ 100%)
+                      </p>
+                      <p className="text-xs text-slate-400 mt-1">
+                        This shows the current state of positions. For historical breach events, see the Compliance Monitoring page.
+                      </p>
+                    </div>
                   </InfoTooltipContent>
                 </InfoTooltip>
               </div>

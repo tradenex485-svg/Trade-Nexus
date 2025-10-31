@@ -9,10 +9,16 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { BidWeekStatus } from '@/components/cftc/bid-week-status';
 import { ExceptionsDashboard } from '@/components/cftc/exceptions-dashboard';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, BarChart, Bar, Legend } from 'recharts';
 import {
   Eye,
   AlertTriangle,
@@ -27,6 +33,7 @@ import {
   Building2,
   Activity,
   AlertCircle,
+  Info,
 } from 'lucide-react';
 
 interface MonitoringStats {
@@ -313,6 +320,7 @@ export default function MonitoringPage() {
       )}
 
       {/* Stats Overview */}
+      <TooltipProvider delayDuration={200}>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Compliance Score */}
         <Card className="p-6 bg-slate-900/50 border-slate-700">
@@ -326,7 +334,28 @@ export default function MonitoringPage() {
               {complianceScore.toFixed(1)}%
             </div>
           </div>
-          <h3 className="text-sm font-medium text-slate-400 mb-1">Compliance Score</h3>
+          <div className="flex items-center gap-2 mb-1">
+            <h3 className="text-sm font-medium text-slate-400">Compliance Score</h3>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button className="text-slate-400 hover:text-slate-300 transition-colors">
+                  <Info className="h-3 w-3" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <div className="max-w-xs space-y-2">
+                  <p className="font-semibold text-white">Compliance Score</p>
+                  <p>Overall compliance percentage across all monitored positions.</p>
+                  <p className="text-xs text-slate-300 mt-2">
+                    <strong>Calculation:</strong> ((total_positions - breached) / total_positions) × 100
+                  </p>
+                  <p className="text-xs text-slate-400 mt-1">
+                    ≥95% = Good, 85-94% = Warning, &lt;85% = Critical
+                  </p>
+                </div>
+              </TooltipContent>
+            </Tooltip>
+          </div>
           <p className="text-xs text-slate-500">
             {stats?.positions.total_positions || 0} total positions monitored
           </p>
@@ -345,7 +374,28 @@ export default function MonitoringPage() {
               {stats?.breaches.critical || 0}
             </div>
           </div>
-          <h3 className="text-sm font-medium text-slate-400 mb-1">Critical Breaches</h3>
+          <div className="flex items-center gap-2 mb-1">
+            <h3 className="text-sm font-medium text-slate-400">Critical Breaches</h3>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button className="text-slate-400 hover:text-slate-300 transition-colors">
+                  <Info className="h-3 w-3" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <div className="max-w-xs space-y-2">
+                  <p className="font-semibold text-white">Critical Breach Events</p>
+                  <p>Number of critical severity regulatory breach events in the compliance_breaches table.</p>
+                  <p className="text-xs text-slate-300 mt-2">
+                    <strong>Calculation:</strong> COUNT of compliance_breaches where severity = 'critical' and status = 'open'
+                  </p>
+                  <p className="text-xs text-slate-400 mt-1">
+                    These are historical breach event records tracked for compliance auditing. Each breach event is logged separately.
+                  </p>
+                </div>
+              </TooltipContent>
+            </Tooltip>
+          </div>
           <p className="text-xs text-slate-500">
             {stats?.breaches.total_open_breaches || 0} total open breaches
           </p>
@@ -359,7 +409,28 @@ export default function MonitoringPage() {
               {stats?.positions.warning || 0}
             </div>
           </div>
-          <h3 className="text-sm font-medium text-slate-400 mb-1">Warning Level</h3>
+          <div className="flex items-center gap-2 mb-1">
+            <h3 className="text-sm font-medium text-slate-400">Warning Level</h3>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button className="text-slate-400 hover:text-slate-300 transition-colors">
+                  <Info className="h-3 w-3" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <div className="max-w-xs space-y-2">
+                  <p className="font-semibold text-white">Warning Level Positions</p>
+                  <p>Number of positions approaching their regulatory limits.</p>
+                  <p className="text-xs text-slate-300 mt-2">
+                    <strong>Calculation:</strong> COUNT of positions where 85% ≤ pos_pct &lt; 100%
+                  </p>
+                  <p className="text-xs text-slate-400 mt-1">
+                    These positions require close monitoring as they may breach soon.
+                  </p>
+                </div>
+              </TooltipContent>
+            </Tooltip>
+          </div>
           <p className="text-xs text-slate-500">
             Positions at 85-99% utilization
           </p>
@@ -373,12 +444,34 @@ export default function MonitoringPage() {
               {stats?.alerts_24h.total_alerts || 0}
             </div>
           </div>
-          <h3 className="text-sm font-medium text-slate-400 mb-1">Alerts (24h)</h3>
+          <div className="flex items-center gap-2 mb-1">
+            <h3 className="text-sm font-medium text-slate-400">Alerts (24h)</h3>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button className="text-slate-400 hover:text-slate-300 transition-colors">
+                  <Info className="h-3 w-3" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <div className="max-w-xs space-y-2">
+                  <p className="font-semibold text-white">24-Hour Alerts</p>
+                  <p>Total number of system alerts generated in the last 24 hours.</p>
+                  <p className="text-xs text-slate-300 mt-2">
+                    <strong>Calculation:</strong> COUNT of alerts where created_at ≥ NOW() - 24 hours
+                  </p>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Includes threshold alerts, breach notifications, and system warnings.
+                  </p>
+                </div>
+              </TooltipContent>
+            </Tooltip>
+          </div>
           <p className="text-xs text-slate-500">
             {stats?.alerts_24h.unacknowledged || 0} unacknowledged
           </p>
         </Card>
       </div>
+      </TooltipProvider>
 
       {/* Breach Severity Summary */}
       <Card className="p-6 bg-slate-900/50 border-slate-700">
@@ -430,7 +523,7 @@ export default function MonitoringPage() {
                 style={{ fontSize: '12px' }}
                 label={{ value: 'Avg Utilization %', angle: -90, position: 'insideLeft', style: { fill: '#94a3b8' } }}
               />
-              <Tooltip
+              <RechartsTooltip
                 contentStyle={{
                   backgroundColor: '#1e293b',
                   border: '1px solid #334155',
@@ -480,7 +573,7 @@ export default function MonitoringPage() {
                 style={{ fontSize: '12px' }}
                 label={{ value: 'Breach Count', angle: -90, position: 'insideLeft', style: { fill: '#94a3b8' } }}
               />
-              <Tooltip
+              <RechartsTooltip
                 contentStyle={{
                   backgroundColor: '#1e293b',
                   border: '1px solid #334155',

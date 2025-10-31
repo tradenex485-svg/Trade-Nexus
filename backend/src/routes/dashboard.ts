@@ -23,7 +23,7 @@ dashboardRoutes.get('/overview', optionalAuth, async (c) => {
     const exchangeId = c.req.query('exchange_id') ? parseInt(c.req.query('exchange_id')!) : null;
     const cache = new CacheService(c.env.SESSIONS, c.env.DB);
 
-    // Use cache with 1-minute TTL for dashboard data (include exchange_id in cache key)
+    // Use cache with 30-second TTL for dashboard data (include exchange_id in cache key)
     const overview = await cache.getOrCompute(
       `${CacheKeys.dashboardOverview()}_ex${exchangeId || 'all'}`,
       async () => {
@@ -534,20 +534,20 @@ dashboardRoutes.get('/ice-positions', async (c) => {
         const bindings = marketLocation ? [marketLocation] : [];
 
         // Get aggregated positions by commodity (for bar chart)
-        // Show net position per commodity (can be positive or negative)
+        // Show net position per commodity (using pos_lots as net position)
         const positions = await c.env.DB.prepare(`
           SELECT
             lc.reporting_limit_code as commodity,
-            SUM(lc.total_buy) as total_long,
-            SUM(lc.total_sale) as total_short,
-            SUM(lc.total_buy - lc.total_sale) as net_position,
+            SUM(CASE WHEN lc.pos_lots > 0 THEN lc.pos_lots ELSE 0 END) as total_long,
+            SUM(CASE WHEN lc.pos_lots < 0 THEN ABS(lc.pos_lots) ELSE 0 END) as total_short,
+            SUM(lc.pos_lots) as net_position,
             COUNT(*) as position_count,
             AVG(lc.pos_pct) as avg_utilization
           FROM limit_calculations lc
           WHERE lc.is_active = 1 ${marketFilter}
           GROUP BY lc.reporting_limit_code
-          HAVING ABS(SUM(lc.total_buy - lc.total_sale)) > 0
-          ORDER BY ABS(SUM(lc.total_buy - lc.total_sale)) DESC
+          HAVING ABS(SUM(lc.pos_lots)) > 0
+          ORDER BY ABS(SUM(lc.pos_lots)) DESC
           LIMIT 20
         `).bind(...bindings).all();
 

@@ -242,7 +242,7 @@ export const CacheKeys = {
  * Cache TTL constants (in seconds)
  */
 export const CacheTTL = {
-  SHORT: 60,        // 1 minute - fast changing data
+  SHORT: 30,        // 30 seconds - fast changing data (dashboard)
   MEDIUM: 300,      // 5 minutes - dashboard stats
   LONG: 3600,       // 1 hour - market limits
   DAY: 86400,       // 24 hours - reference data

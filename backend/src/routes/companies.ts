@@ -13,18 +13,20 @@ const companiesRoutes = new Hono();
 async function canAccessCompany(c: any, companyId: number): Promise<boolean> {
   const user = c.get('user');
 
+  // Use role_id from user object (set by authenticate middleware)
+  const roleId = user.role_id || user.roleId;
+
   // Super Admin can access all companies
-  if (user.roleId === await getRoleId(c.env.DB, 'super_admin')) {
+  const superAdminId = await getRoleId(c.env.DB, 'super_admin');
+  if (roleId === superAdminId) {
     return true;
   }
 
   // Company Admin can only access their own company
-  if (user.roleId === await getRoleId(c.env.DB, 'company_admin')) {
-    const userCompany = await c.env.DB.prepare(`
-      SELECT company_id FROM users WHERE id = ?
-    `).bind(user.userId).first<{ company_id: number }>();
-
-    return userCompany?.company_id === companyId;
+  const companyAdminId = await getRoleId(c.env.DB, 'company_admin');
+  if (roleId === companyAdminId) {
+    const userCompanyId = user.company_id;
+    return userCompanyId === companyId;
   }
 
   return false;
@@ -42,6 +44,15 @@ companiesRoutes.get('/', authenticate, async (c) => {
     const user = c.get('user');
     const superAdminId = await getRoleId(c.env.DB, 'super_admin');
     const companyAdminId = await getRoleId(c.env.DB, 'company_admin');
+    const roleId = user.role_id || user.roleId;
+
+    // Only Super Admin and Company Admin can list companies
+    if (roleId !== superAdminId && roleId !== companyAdminId) {
+      return c.json({
+        success: false,
+        error: 'Forbidden - Insufficient permissions',
+      }, 403);
+    }
 
     let query = `
       SELECT
@@ -58,12 +69,10 @@ companiesRoutes.get('/', authenticate, async (c) => {
     let params: any[] = [];
 
     // Company Admin sees only their company
-    if (user.roleId === companyAdminId) {
-      const userCompany = await c.env.DB.prepare(`
-        SELECT company_id FROM users WHERE id = ?
-      `).bind(user.userId).first<{ company_id: number }>();
+    if (roleId === companyAdminId) {
+      const userCompanyId = user.company_id;
 
-      if (!userCompany?.company_id) {
+      if (!userCompanyId) {
         return c.json({
           success: false,
           error: 'User not assigned to a company',
@@ -71,7 +80,7 @@ companiesRoutes.get('/', authenticate, async (c) => {
       }
 
       query += ' WHERE c.id = ?';
-      params.push(userCompany.company_id);
+      params.push(userCompanyId);
     }
 
     query += ' ORDER BY c.company_name';
