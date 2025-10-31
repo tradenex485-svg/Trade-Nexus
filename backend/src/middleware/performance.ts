@@ -111,6 +111,8 @@ export async function getPerformanceStats(
   hours: number = 24
 ): Promise<any> {
   try {
+    const cutoffTime = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
+
     // Overall stats
     const overallStats = await db
       .prepare(
@@ -125,9 +127,10 @@ export async function getPerformanceStats(
         COUNT(*) as total_requests_for_cache,
         ROUND(CAST(SUM(CASE WHEN cache_hit = 1 THEN 1 ELSE 0 END) AS REAL) / COUNT(*) * 100, 2) as cache_hit_rate
       FROM performance_metrics
-      WHERE created_at >= datetime('now', '-${hours} hours')
+      WHERE created_at >= datetime(?)
     `
       )
+      .bind(cutoffTime)
       .first();
 
     // Slowest endpoints
@@ -141,12 +144,13 @@ export async function getPerformanceStats(
         MAX(response_time_ms) as max_response_time,
         COUNT(*) as request_count
       FROM performance_metrics
-      WHERE created_at >= datetime('now', '-${hours} hours')
+      WHERE created_at >= datetime(?)
       GROUP BY endpoint, method
       ORDER BY avg_response_time DESC
       LIMIT 10
     `
       )
+      .bind(cutoffTime)
       .all();
 
     // Status code distribution
@@ -156,13 +160,14 @@ export async function getPerformanceStats(
       SELECT
         status_code,
         COUNT(*) as count,
-        ROUND(CAST(COUNT(*) AS REAL) / (SELECT COUNT(*) FROM performance_metrics WHERE created_at >= datetime('now', '-${hours} hours')) * 100, 2) as percentage
+        ROUND(CAST(COUNT(*) AS REAL) / (SELECT COUNT(*) FROM performance_metrics WHERE created_at >= datetime(?)) * 100, 2) as percentage
       FROM performance_metrics
-      WHERE created_at >= datetime('now', '-${hours} hours')
+      WHERE created_at >= datetime(?)
       GROUP BY status_code
       ORDER BY status_code
     `
       )
+      .bind(cutoffTime, cutoffTime)
       .all();
 
     // Requests per hour
@@ -174,11 +179,12 @@ export async function getPerformanceStats(
         COUNT(*) as request_count,
         AVG(response_time_ms) as avg_response_time
       FROM performance_metrics
-      WHERE created_at >= datetime('now', '-${hours} hours')
+      WHERE created_at >= datetime(?)
       GROUP BY hour
       ORDER BY hour
     `
       )
+      .bind(cutoffTime)
       .all();
 
     return {
@@ -202,6 +208,7 @@ export async function getSlowQueries(
   hours: number = 1
 ): Promise<any[]> {
   try {
+    const cutoffTime = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
     const result = await db
       .prepare(
         `
@@ -213,12 +220,12 @@ export async function getSlowQueries(
         created_at
       FROM performance_metrics
       WHERE response_time_ms > ?
-        AND created_at >= datetime('now', '-${hours} hours')
+        AND created_at >= datetime(?)
       ORDER BY created_at DESC
       LIMIT 100
     `
       )
-      .bind(thresholdMs)
+      .bind(thresholdMs, cutoffTime)
       .all();
 
     return result.results || [];
@@ -236,13 +243,15 @@ export async function cleanupOldMetrics(
   daysToKeep: number = 7
 ): Promise<void> {
   try {
+    const cutoffTime = new Date(Date.now() - daysToKeep * 24 * 60 * 60 * 1000).toISOString();
     await db
       .prepare(
         `
       DELETE FROM performance_metrics
-      WHERE created_at < datetime('now', '-${daysToKeep} days')
+      WHERE created_at < datetime(?)
     `
       )
+      .bind(cutoffTime)
       .run();
   } catch (error) {
     console.error('Error cleaning up old metrics:', error);

@@ -196,13 +196,15 @@ export async function cleanupOldRateLimits(
   hoursToKeep: number = 24
 ): Promise<void> {
   try {
+    const cutoffTime = new Date(Date.now() - hoursToKeep * 60 * 60 * 1000).toISOString();
     await db
       .prepare(
         `
       DELETE FROM rate_limits
-      WHERE created_at < datetime('now', '-${hoursToKeep} hours')
+      WHERE created_at < datetime(?)
     `
       )
+      .bind(cutoffTime)
       .run();
   } catch (error) {
     console.error('Error cleaning up old rate limits:', error);
@@ -217,6 +219,8 @@ export async function getRateLimitStats(
   hours: number = 24
 ): Promise<any> {
   try {
+    const cutoffTime = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
+
     // Top rate limited users
     const topLimited = await db
       .prepare(
@@ -227,12 +231,13 @@ export async function getRateLimitStats(
         SUM(request_count) as total_requests,
         COUNT(DISTINCT window_start) as windows_hit
       FROM rate_limits
-      WHERE created_at >= datetime('now', '-${hours} hours')
+      WHERE created_at >= datetime(?)
       GROUP BY identifier, endpoint
       ORDER BY total_requests DESC
       LIMIT 20
     `
       )
+      .bind(cutoffTime)
       .all();
 
     // Most hit endpoints
@@ -244,12 +249,13 @@ export async function getRateLimitStats(
         SUM(request_count) as total_requests,
         COUNT(DISTINCT identifier) as unique_users
       FROM rate_limits
-      WHERE created_at >= datetime('now', '-${hours} hours')
+      WHERE created_at >= datetime(?)
       GROUP BY endpoint
       ORDER BY total_requests DESC
       LIMIT 10
     `
       )
+      .bind(cutoffTime)
       .all();
 
     // Requests over time
@@ -261,11 +267,12 @@ export async function getRateLimitStats(
         SUM(request_count) as request_count,
         COUNT(DISTINCT identifier) as unique_identifiers
       FROM rate_limits
-      WHERE created_at >= datetime('now', '-${hours} hours')
+      WHERE created_at >= datetime(?)
       GROUP BY hour
       ORDER BY hour
     `
       )
+      .bind(cutoffTime)
       .all();
 
     return {
