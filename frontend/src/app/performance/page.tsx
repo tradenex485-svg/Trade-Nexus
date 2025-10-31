@@ -31,8 +31,9 @@ export default function PerformancePage() {
         performanceApi.getStats(timeRange),
         performanceApi.getRateLimitStats(timeRange),
       ]);
-      setStats(perfStats);
-      setRateLimitStats(rateStats);
+      // Extract data from API response wrapper
+      setStats(perfStats?.data || perfStats);
+      setRateLimitStats(rateStats?.data || rateStats);
     } catch (error) {
       console.error('Failed to load performance data:', error);
     } finally {
